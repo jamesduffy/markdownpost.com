@@ -1,0 +1,7 @@
+{% autoescape off %}Hi {{ user.get_username }},
+
+Confirm this email address for your MarkdownPost account:
+{{ link }}
+
+The link works for three days. If you didn't add this address, ignore this email and nothing will change.
+{% endautoescape %}

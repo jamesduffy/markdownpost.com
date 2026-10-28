@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block main_class %}container auth{% endblock %}
+{% block content %}
+  <h1 class="page-title">Log in</h1>
+  <form method="post" class="stack">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label>Username {{ form.username }}</label>
+    <label>Password {{ form.password }}</label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn" type="submit">Log in</button>
+  </form>
+  <p class="meta"><a href="{% url 'password_reset' %}">Forgot password?</a></p>
+  <p class="meta">New here? <a href="{% url 'signup' %}">Create an account</a></p>
+{% endblock %}

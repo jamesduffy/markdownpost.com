@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block main_class %}container auth{% endblock %}
+{% block content %}
+  <h1 class="page-title">Create your account</h1>
+  <form method="post" class="stack">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>{{ field.label }} {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}
+        {{ field.errors }}
+      </label>
+    {% endfor %}
+    <button class="btn" type="submit">Sign up</button>
+  </form>
+  <p class="meta">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+{% endblock %}

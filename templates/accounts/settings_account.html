@@ -1,0 +1,38 @@
+{% extends "accounts/settings_base.html" %}
+{% block title %}Account settings{% endblock %}
+{% block panel %}
+  <form method="post" class="settings-form">
+    {% csrf_token %}
+    <section class="field-group">
+      <h2>Email</h2>
+      <label>{{ form.email.label }} {{ form.email }} <small>{{ form.email.help_text }}</small> {{ form.email.errors }}</label>
+      {% if user.email %}
+        <p class="hint">{% if user.email_verified %}<strong class="verified">Verified</strong>{% else %}<strong class="unverified">Not verified.</strong> Password resets are only sent to confirmed addresses.{% endif %}</p>
+      {% endif %}
+      <div class="form-actions"><button class="btn" type="submit">Save email</button></div>
+    </section>
+  </form>
+  {% if user.email and not user.email_verified %}
+    <form method="post" action="{% url 'resend_verification' %}" class="settings-form">
+      {% csrf_token %}
+      <div class="form-actions"><button class="btn ghost" type="submit">Send the confirmation link again</button></div>
+    </form>
+  {% endif %}
+
+  <section class="field-group">
+    <h2>Sign-in</h2>
+    <p class="hint">Your username is <strong>@{{ user.username }}</strong>. It's part of every link to your posts, so it can't be changed.</p>
+    <a class="btn ghost" href="{% url 'password_change' %}">Change password</a>
+  </section>
+
+  <section class="field-group danger-zone">
+    <h2>Delete account</h2>
+    <p class="hint">This permanently deletes your profile and every post you've written. It can't be undone.</p>
+    <form method="post" action="{% url 'delete_account' %}" class="settings-form">
+      {% csrf_token %}
+      <label>Type your username (<code>{{ user.username }}</code>) to confirm <input type="text" name="confirm" autocomplete="off" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+      <div class="form-actions"><button class="btn danger" type="submit">Delete my account</button></div>
+    </form>
+  </section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Offline{% endblock %}
+{# User-neutral on purpose: this page is cached by the service worker and shown to whoever uses the browser next. #}
+{% block header %}
+  <div class="dock"><a class="dock-btn" href="/" aria-label="MarkdownPost home" title="Home"><span aria-hidden="true">M↓</span></a></div>
+{% endblock %}
+{% block content %}
+  <h1 class="page-title">You're offline</h1>
+  <p class="lede">Reconnect and try again. Anything you were writing is saved on this device and will sync once you're back online.</p>
+  <section id="local-drafts" hidden>
+    <h2 class="more-title">Drafts on this device</h2>
+    <div class="more-list" id="local-draft-list"></div>
+  </section>
+  <script src="{% static 'js/offline.js' %}" defer></script>
+{% endblock %}

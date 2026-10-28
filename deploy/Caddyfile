@@ -1,0 +1,9 @@
+# {$DOMAIN} comes from the environment (.env). Caddy fetches and renews the HTTPS certificate on its own
+# and redirects http to https. It also sets X-Forwarded-For/-Proto, which the app relies on (TRUST_PROXY=1).
+{$DOMAIN} {
+	# Largest legitimate request: a base64-encoded 5 MB image sent over MCP.
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy web:8000
+}

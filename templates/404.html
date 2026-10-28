@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+  <h1 class="page-title">Page not found</h1>
+  <p class="lede">That page doesn't exist, or it isn't public.</p>
+  <p><a class="btn" href="{% url 'discover' %}">Back to MarkdownPost</a></p>
+{% endblock %}

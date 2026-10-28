@@ -1,0 +1,2 @@
+# Dev only (installed when the image is built with INSTALL_DEV=1, i.e. DEBUG=1).
+django-debug-toolbar==8.0.0

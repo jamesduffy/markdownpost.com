@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Confirm your email{% endblock %}
+{% block main_class %}container auth{% endblock %}
+{% block content %}
+  <h1 class="page-title">Confirm your email</h1>
+  <p class="lede">Confirm that <strong>{{ email }}</strong> is your address. Password resets will be sent here.</p>
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <button class="btn" type="submit">Confirm email</button>
+  </form>
+{% endblock %}

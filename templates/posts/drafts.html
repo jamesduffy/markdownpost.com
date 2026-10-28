@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Drafts{% endblock %}
+{% block content %}
+  <h1 class="page-title">Drafts</h1>
+  <p class="lede">Posts you've started but haven't saved yet. Only you can see them.</p>
+  <p><a class="btn" href="{% url 'new_post' %}">New post</a></p>
+  {% for post in page %}
+    <article class="card">
+      <h2><a href="{{ post.edit_url }}">{{ post.display_title }}</a></h2>
+      {% if post.excerpt %}<p class="excerpt">{{ post.excerpt }}</p>{% endif %}
+      <p class="meta">
+        Edited {{ post.updated_at|timesince }} ago
+        · <a href="{{ post.edit_url }}">Continue writing</a>
+        · <form class="inline" method="post" action="{{ post.delete_url }}" data-confirm="Delete this draft permanently?">{% csrf_token %}<button class="link-btn danger" type="submit">Delete</button></form>
+      </p>
+    </article>
+  {% empty %}
+    <p class="empty">No drafts. Anything you start writing shows up here until you save it.</p>
+  {% endfor %}
+  {% if page.has_other_pages %}
+    <nav class="pager" aria-label="Pagination">
+      {% if page.has_previous %}<a class="btn ghost" href="?page={{ page.previous_page_number }}">← Newer</a>{% else %}<span></span>{% endif %}
+      {% if page.has_next %}<a class="btn ghost" href="?page={{ page.next_page_number }}">Older →</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

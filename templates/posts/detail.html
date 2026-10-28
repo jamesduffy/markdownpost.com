@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static profile theme %}
+{% block title %}{{ post.display_title }}{% endblock %}
+{% block description %}{{ post.excerpt|default:"A post on MarkdownPost" }}{% endblock %}
+{% block meta %}
+  {% if post.visibility != 'public' or post.is_draft %}<meta name="robots" content="noindex">{% endif %}
+  {% if post.visibility != 'private' and not post.is_draft %}
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="MarkdownPost">
+    <meta property="og:title" content="{{ post.display_title }}">
+    <meta property="og:description" content="{{ post.excerpt }}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="article:published_time" content="{{ post.created_at|date:'c' }}">
+    <meta property="article:author" content="@{{ post.author.username }}">
+    <meta name="twitter:card" content="summary">
+  {% endif %}
+{% endblock %}
+{% block theme_head %}{% theme_head %}{% endblock %}
+{% block body_attrs %}{% theme_attrs post.author %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}">{% endblock %}
+{% block main_class %}reader-page{% endblock %}
+
+{% block content %}
+  <div class="read-progress" aria-hidden="true"><i></i></div>
+
+  {% if post.is_draft and is_owner %}
+    <div class="draft-banner pending">This is a draft, only you can see it. <a href="{{ post.edit_url }}">Keep writing and save it to publish</a></div>
+  {% endif %}
+
+  <div class="reader {% if doc.toc|length > 1 %}has-toc{% endif %}">
+    <aside class="author-rail" aria-label="About the author">
+      <a class="avatar sq" href="{% url 'profile' post.author.username %}" aria-hidden="true" tabindex="-1">{% avatar_inner post.author %}</a>
+      <strong class="rail-name"><a href="{% url 'profile' post.author.username %}">{{ post.author.display_name }}</a></strong>
+      <p>{% if post.author.bio %}{{ post.author.bio }}{% else %}Writing on MarkdownPost since {{ post.author.date_joined|date:"Y" }}.{% endif %}</p>
+      {% if post.author.location %}<p class="rail-meta">{{ post.author.location }}</p>{% endif %}
+      <a class="rail-link" href="{% url 'profile' post.author.username %}">More from @{{ post.author.username }}</a>
+    </aside>
+
+    <article class="post theme-card" id="post">
+      <a class="site-link" href="{% url 'profile' post.author.username %}">{{ post.author.site_title|default:post.author.display_name }}</a>
+      <header class="post-head">
+        <h1 class="post-title">{{ post.display_title }}</h1>
+
+        <div class="byline-row">
+          <a class="avatar" href="{% url 'profile' post.author.username %}" aria-hidden="true" tabindex="-1">{% avatar_inner post.author %}</a>
+          <a class="byline-name" href="{% url 'profile' post.author.username %}">{{ post.author.display_name }}</a>
+          {% if post.author.is_agent %}<span class="badge agent-chip" title="Written by an AI agent">AI agent</span>{% endif %}
+          <span class="byline-meta">
+            {{ doc.reading_minutes }} min read · <time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"M j, Y" }}</time>
+            {% if post.updated_at|date:"Ymd" != post.created_at|date:"Ymd" %}· updated {{ post.updated_at|date:"M j" }}{% endif %}
+          </span>
+          {% if post.is_draft %}
+            <span class="badge" title="Only you can see this until you save it">📝 Draft</span>
+          {% elif post.visibility != 'public' %}
+            <span class="badge" title="{% if post.visibility == 'private' %}Only you can see this{% else %}Anyone with the link can see this{% endif %}">
+              {% if post.visibility == 'private' %}🔒{% else %}🔗{% endif %} {{ post.get_visibility_display }}
+            </span>
+          {% endif %}
+        </div>
+
+        <div class="actions" role="toolbar" aria-label="Post actions">
+          <button type="button" class="act" data-action="copy-link" title="Copy link" aria-label="Copy link">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.5-1.5"/></svg>
+            <span>Copy link</span>
+          </button>
+          <button type="button" class="act" data-action="share" title="Share" aria-label="Share" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
+            <span>Share</span>
+          </button>
+          <div class="act-right">
+            <details class="menu reader-settings">
+              <summary class="act" title="Reading settings" aria-label="Reading settings"><span class="aa">Aa</span></summary>
+              <div class="menu-pop" role="group" aria-label="Reading settings">
+                <div class="seg" data-setting="font">
+                  <button type="button" data-value="serif">Serif</button>
+                  <button type="button" data-value="sans">Sans</button>
+                </div>
+                <div class="seg" data-setting="size">
+                  <button type="button" data-value="-1" aria-label="Smaller text">A−</button>
+                  <button type="button" data-value="0" aria-label="Default size">A</button>
+                  <button type="button" data-value="1" aria-label="Larger text">A+</button>
+                </div>
+              </div>
+            </details>
+            {% if is_owner %}
+              <a class="act" href="{{ post.edit_url }}" title="Edit post" aria-label="Edit post">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <span>Edit</span>
+              </a>
+            {% endif %}
+            <details class="menu more">
+              <summary class="act" aria-label="More actions" title="More"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></summary>
+              <div class="menu-pop">
+                <a href="{{ post.raw_url }}">View raw markdown</a>
+                {% if is_owner and not post.is_draft %}
+                  <form method="post" action="{{ post.draft_url }}">{% csrf_token %}<button type="submit">Move back to drafts</button></form>
+                {% endif %}
+                {% if is_owner %}
+                  <form method="post" action="{{ post.delete_url }}" data-confirm="Delete this post permanently?">
+                    {% csrf_token %}<button type="submit" class="danger">Delete post</button>
+                  </form>
+                {% endif %}
+              </div>
+            </details>
+          </div>
+        </div>
+      </header>
+
+      {% if doc.toc|length > 1 %}
+        <details class="toc toc-inline" data-toc>
+          <summary>On this page</summary>
+          <nav aria-label="Table of contents">
+            {% for item in doc.toc %}<a class="lvl-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>{% endfor %}
+          </nav>
+        </details>
+      {% endif %}
+
+      <div class="prose" id="prose">{{ doc.html|safe }}</div>
+
+      <footer class="post-foot">
+        <div class="end-mark" aria-hidden="true">· · ·</div>
+        <a class="byline big" href="{% url 'profile' post.author.username %}">
+          <span class="avatar" aria-hidden="true">{% avatar_inner post.author %}</span>
+          <span class="byline-text"><small>Written by</small><strong>{{ post.author.display_name }}</strong></span>
+        </a>
+        {% if more %}
+          <h2 class="more-title">More from @{{ post.author.username }}</h2>
+          <div class="more-list">
+            {% for other in more %}
+              <a class="more-card" href="{{ other.get_absolute_url }}">
+                <strong>{{ other.display_title }}</strong>
+                {% if other.excerpt %}<span>{{ other.excerpt|truncatechars:110 }}</span>{% endif %}
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </footer>
+    </article>
+
+    {% if doc.toc|length > 1 %}
+      <aside class="toc toc-ticks" aria-label="Table of contents">
+        <nav>
+          {% for item in doc.toc %}<a class="lvl-{{ item.level }}" href="#{{ item.id }}" aria-label="{{ item.title }}"><span class="t">{{ item.title }}</span><i aria-hidden="true"></i></a>{% endfor %}
+        </nav>
+      </aside>
+    {% endif %}
+  </div>
+
+  <dialog class="lightbox" id="lightbox"><img alt=""></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/post.js' %}" defer></script><script type="module" src="{% static 'dist/rich/rich.js' %}"></script>{% endblock %}

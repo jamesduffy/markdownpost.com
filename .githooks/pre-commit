@@ -1,0 +1,19 @@
+#!/bin/sh
+# Blocks a commit that contains a secret (API keys, tokens, private keys, passwords...), so one can never
+# reach this public repo's history. Needs Docker. Turn it on once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+# It's a safety net, not a substitute for care: CI (.github/workflows/secret-scan.yml) re-checks every push.
+if ! command -v docker >/dev/null 2>&1; then
+  echo "pre-commit: docker not found, so the secret scan was skipped. Install Docker (or scan another way) before pushing." >&2
+  exit 0
+fi
+docker run --rm -v "$(pwd):/repo" zricethezav/gitleaks:v8.30.1 git /repo --pre-commit --staged --redact --no-banner
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "" >&2
+  echo "pre-commit: possible secret in the staged changes (see above). Commit blocked." >&2
+  echo "  - Remove it, and rotate it if it was ever real. If it's a false positive, add its fingerprint to .gitleaksignore." >&2
+fi
+exit "$status"

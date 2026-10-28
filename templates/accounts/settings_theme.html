@@ -1,0 +1,129 @@
+{% extends "accounts/settings_base.html" %}
+{% load static theme %}
+{% block title %}Theme settings{% endblock %}
+{% block theme_head %}{% theme_head %}<link rel="stylesheet" href="{% static 'css/theme-editor.css' %}">{% endblock %}
+{% block main_class %}container theme-page{% endblock %}
+{% block panel %}
+  <p class="hint">Make your profile and posts look like yours. Themes only apply to <a href="{% url 'profile' user.username %}">your profile</a> and your post pages; everything else stays the standard look.</p>
+
+  <form method="post" enctype="multipart/form-data" class="settings-form theme-form" id="theme-form" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="theme-layout">
+      <div class="theme-controls">
+        <section class="field-group">
+          <h2>Site</h2>
+          <label>Site title {{ form.site_title }} {{ form.site_title.errors }}</label>
+          <label>Tagline {{ form.tagline }} {{ form.tagline.errors }}</label>
+          <label>{{ form.about_md.label }} {{ form.about_md }} {{ form.about_md.errors }}</label>
+          <p class="hint">Markdown, shown on your profile page. Everything that works in posts works here: headings, links, images, code, tables.</p>
+        </section>
+
+        <section class="field-group">
+          <h2>Starter theme</h2>
+          <p class="hint">Pick a starting point, then change anything below.</p>
+          <div class="preset-gallery" role="radiogroup" aria-label="Starter themes">
+            {% for key, label, t in presets %}
+              <label class="preset-card">
+                <input type="radio" name="preset" value="{{ key }}"{% if form.preset.value == key %} checked{% endif %} data-preset="{{ key }}">
+                <span class="preset-swatch" style="background:{{ t.colors.bg }};color:{{ t.colors.text }};border-color:{{ t.colors.accent }}">
+                  <span class="preset-name">{{ label }}</span>
+                  <span class="preset-dots">
+                    <i style="background:{{ t.colors.surface }}"></i><i style="background:{{ t.colors.muted }}"></i><i style="background:{{ t.colors.accent }}"></i>
+                  </span>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="form-actions no-js-only">
+            <button class="btn ghost" type="submit" name="action" value="preset" formnovalidate>Apply starter theme</button>
+          </div>
+          {{ form.preset.errors }}
+        </section>
+
+        <section class="field-group">
+          <h2>Colors</h2>
+          <div class="control-grid">
+            <label>{{ form.color_bg.label }} {{ form.color_bg }}</label>
+            <label>{{ form.color_surface.label }} {{ form.color_surface }}</label>
+            <label>{{ form.color_text.label }} {{ form.color_text }}</label>
+            <label>{{ form.color_muted.label }} {{ form.color_muted }}</label>
+            <label>{{ form.color_accent.label }} {{ form.color_accent }}</label>
+          </div>
+          {{ form.color_bg.errors }}{{ form.color_surface.errors }}{{ form.color_text.errors }}{{ form.color_muted.errors }}{{ form.color_accent.errors }}
+          <ul class="contrast-warnings" id="contrast-warnings" aria-live="polite"></ul>
+        </section>
+
+        <section class="field-group">
+          <h2>Background</h2>
+          <div class="control-grid">
+            <label>{{ form.bg_type.label }} {{ form.bg_type }}</label>
+            <label data-show-for="gradient pattern">{{ form.bg_color2.label }} {{ form.bg_color2 }}</label>
+            <label data-show-for="gradient">{{ form.bg_angle.label }} {{ form.bg_angle }}</label>
+            <label data-show-for="pattern">{{ form.bg_pattern.label }} {{ form.bg_pattern }}</label>
+            <label data-show-for="pattern">{{ form.bg_scale.label }} {{ form.bg_scale }}</label>
+            <label data-show-for="image">{{ form.bg_fit.label }} {{ form.bg_fit }}</label>
+          </div>
+          <div data-show-for="image">
+            <label class="btn ghost file-btn">Choose image{{ form.bg_image_file }}</label>
+            {% if current_image %}<label class="check">{{ form.remove_bg_image }} {{ form.remove_bg_image.label }}</label>{% endif %}
+            <p class="hint">PNG, JPEG, WebP or GIF up to 5 MB. Saving a new image replaces the old one.</p>
+            {{ form.bg_image_file.errors }}
+          </div>
+          <label class="check">{{ form.bg_fixed }} {{ form.bg_fixed.label }}</label>
+          {{ form.bg_type.errors }}{{ form.bg_color2.errors }}{{ form.bg_angle.errors }}{{ form.bg_pattern.errors }}{{ form.bg_scale.errors }}{{ form.bg_fit.errors }}
+        </section>
+
+        <section class="field-group">
+          <h2>Fonts</h2>
+          <div class="control-grid">
+            <label>{{ form.font_heading.label }} {{ form.font_heading }}</label>
+            <label>{{ form.font_body.label }} {{ form.font_body }}</label>
+          </div>
+          {{ form.font_heading.errors }}{{ form.font_body.errors }}
+        </section>
+
+        <section class="field-group">
+          <h2>Layout</h2>
+          <div class="control-grid">
+            <label>{{ form.layout_width.label }} {{ form.layout_width }}</label>
+            <label>{{ form.layout_card.label }} {{ form.layout_card }}</label>
+            <label>{{ form.layout_radius.label }} {{ form.layout_radius }}</label>
+            <label>{{ form.layout_headings.label }} {{ form.layout_headings }}</label>
+            <label>{{ form.layout_avatar.label }} {{ form.layout_avatar }}</label>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button class="btn" type="submit">Save theme</button>
+          <button class="btn ghost" type="submit" name="action" value="reset" formnovalidate>Reset to starter theme</button>
+          <button class="btn ghost js-only" type="button" id="theme-surprise" data-url="{% url 'theme_random' %}" hidden>Surprise me</button>
+          <a class="quiet-link" href="{% url 'profile' user.username %}">View public profile</a>
+        </div>
+      </div>
+
+      <aside class="theme-preview-wrap" aria-label="Live preview">
+        <h2>Preview</h2>
+        <div{% theme_attrs preview extra_class="theme-preview" %} id="theme-preview">
+          <div class="pv-hero">
+            <span class="avatar pv-avatar">{{ user.initial }}</span>
+            <div>
+              <p class="pv-title" id="pv-title">{{ user.site_title|default:user.display_name }}</p>
+              <p class="pv-tagline" id="pv-tagline">{{ user.tagline|default:"Your tagline goes here" }}</p>
+            </div>
+          </div>
+          <div class="pv-card">
+            <h3>A sample heading</h3>
+            <p>Body text with a <a href="#" tabindex="-1">link</a> and some <em>emphasis</em>. <span class="pv-muted">Muted text looks like this.</span></p>
+            <blockquote>A quote, for good measure.</blockquote>
+            <pre><code>print("hello, world")</code></pre>
+            <p><span class="btn pv-btn">A button</span></p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </form>
+  {{ theme_config|json_script:"theme-config" }}
+  <script src="{% static 'js/theme-editor.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "accounts/settings_base.html" %}
+{% load static profile %}
+{% block title %}Profile settings{% endblock %}
+{% block panel %}
+  <form method="post" enctype="multipart/form-data" class="settings-form" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <section class="field-group">
+      <h2>Photo</h2>
+      <div class="avatar-edit">
+        <span class="avatar xl" id="avatar-preview">{% avatar_inner user %}</span>
+        <div>
+          <label class="btn ghost file-btn">Choose photo{{ form.avatar }}</label>
+          {% if user.avatar_key %}<label class="check"><input type="checkbox" name="remove_avatar"> Remove current photo</label>{% endif %}
+          <p class="hint">PNG, JPEG, WebP or GIF up to 5 MB. It's cropped to a square.</p>
+          {{ form.avatar.errors }}
+        </div>
+      </div>
+    </section>
+
+    <section class="field-group">
+      <h2>About you</h2>
+      <label>{{ form.full_name.label }} {{ form.full_name }} {{ form.full_name.errors }}</label>
+      <label>{{ form.location.label }} {{ form.location }} {{ form.location.errors }}</label>
+      <label>{{ form.bio.label }} {{ form.bio }} <small class="count" data-count-for="id_bio">0 / 300</small> {{ form.bio.errors }}</label>
+    </section>
+
+    <section class="field-group">
+      <h2>Links</h2>
+      <p class="hint">Paste a handle or a link, either works.</p>
+      <label>{{ form.website.label }} {{ form.website }} {{ form.website.errors }}</label>
+      <label>{{ form.github.label }} {{ form.github }} {{ form.github.errors }}</label>
+      <label>{{ form.linkedin.label }} {{ form.linkedin }} {{ form.linkedin.errors }}</label>
+      <label>{{ form.bluesky.label }} {{ form.bluesky }} {{ form.bluesky.errors }}</label>
+      <label>{{ form.mastodon.label }} {{ form.mastodon }} {{ form.mastodon.errors }}</label>
+      <label>{{ form.threads.label }} {{ form.threads }} {{ form.threads.errors }}</label>
+    </section>
+
+    <section class="field-group">
+      <h2>Your posts</h2>
+      <label class="check">{{ form.show_related_posts }} {{ form.show_related_posts.label }}</label>
+      <p class="hint">When on, readers see a short list of your other public posts below each post. Turn it off for a cleaner ending.</p>
+      {{ form.show_related_posts.errors }}
+    </section>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">Save profile</button>
+      <a class="quiet-link" href="{% url 'profile' user.username %}">View public profile</a>
+    </div>
+  </form>
+  <script src="{% static 'js/settings.js' %}"></script>
+{% endblock %}

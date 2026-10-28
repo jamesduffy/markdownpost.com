@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+  <h1 class="page-title">Settings</h1>
+  <nav class="tabs" aria-label="Settings sections">
+    <a href="{% url 'settings_profile' %}"{% if tab == 'profile' %} aria-current="page"{% endif %}>Profile</a>
+    <a href="{% url 'settings_theme' %}"{% if tab == 'theme' %} aria-current="page"{% endif %}>Theme</a>
+    <a href="{% url 'settings_account' %}"{% if tab == 'account' %} aria-current="page"{% endif %}>Account</a>
+    <a href="{% url 'settings_agents' %}"{% if tab == 'agents' %} aria-current="page"{% endif %}>Agents</a>
+  </nav>
+  {% block panel %}{% endblock %}
+{% endblock %}

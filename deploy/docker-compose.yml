@@ -1,0 +1,105 @@
+# Production stack for your own server. All you need is Docker with the Compose plugin.
+#
+#   cp .env.example .env   # set MARKDOWNPOST_IMAGE, DOMAIN and the two secrets
+#   docker compose up -d
+#
+# The app image is built by GitHub Actions and pulled from ghcr.io (see ../.github/workflows/docker.yml).
+# Caddy sits in front of it and gets a free HTTPS certificate for $DOMAIN automatically.
+name: markdownpost
+
+x-app: &app
+  image: ${MARKDOWNPOST_IMAGE:?set MARKDOWNPOST_IMAGE in .env (e.g. ghcr.io/jamesduffy/markdownpost.com:latest)}
+  env_file: .env # every setting in .env reaches the app (email, S3, limits, ...)
+  environment:
+    # These are fixed for production: .env can't accidentally turn them off.
+    DEBUG: "0"
+    TRUST_PROXY: "1" # Caddy terminates TLS; this enables the HTTPS redirect, secure cookies and HSTS
+    TRUSTED_PROXY_COUNT: "1"
+    DB_HOST: db
+    DB_NAME: ${DB_NAME:-markdownpost}
+    DB_USER: ${DB_USER:-markdownpost}
+    DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+    ALLOWED_HOSTS: ${ALLOWED_HOSTS:-${DOMAIN}}
+    CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://${DOMAIN}}
+    STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env (e.g. blog.example.com)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certificates: keep this volume, or you'll hit Let's Encrypt rate limits
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  # One-shot: applies database migrations before the web app (re)starts.
+  migrate:
+    <<: *app
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    <<: *app
+    expose:
+      - "8000" # only Caddy can reach it; nothing is published on the host
+    volumes:
+      - storage:/data/storage # post bodies and images when STORAGE_BACKEND=local
+    healthcheck:
+      # Any non-5xx answer means gunicorn and Django are up (a 301/400 from the HTTPS or host checks counts).
+      test: ["CMD", "python", "-c", "import http.client as h; c=h.HTTPConnection('127.0.0.1',8000,timeout=3); c.request('GET','/offline/'); raise SystemExit(c.getresponse().status>=500)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Housekeeping: removes uploaded images that no post uses any more (see the README).
+  sweeper:
+    <<: *app
+    command: ["sh", "-c", "while true; do python manage.py sweep_uploads --hours ${SWEEP_MIN_AGE_HOURS:-24}; sleep $$((${SWEEP_INTERVAL_HOURS:-24} * 3600)); done"]
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-markdownpost}
+      POSTGRES_USER: ${DB_USER:-markdownpost}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-markdownpost} -d ${DB_NAME:-markdownpost}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  storage:
+  pgdata:
+  caddy_data:
+  caddy_config:

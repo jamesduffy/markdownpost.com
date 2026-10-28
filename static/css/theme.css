@@ -1,0 +1,186 @@
+/* Author themes for profile and post pages. Static: the per-user part is only the --t-* values and the data-*
+   attributes on the element carrying `.themed` (body on real pages, div.theme-preview in settings). Nothing here
+   is generated from user input.
+   Everything is scoped to html:not([data-plain]) so a visitor's "plain view" falls back to the app's own palette.
+   The floating site menu, toast and lightbox are intentionally not styled here. */
+
+:root:not([data-plain]) {
+  .themed {
+    /* ---- palette: feed the app's own variables so every existing component follows ---- */
+    --bg: var(--t-bg);
+    --fg: var(--t-text);
+    /* Stricter than the saved color: nudged 20% toward the text color so muted copy clears 4.5:1 even where the user's value only just passes. */
+    --muted: color-mix(in srgb, var(--t-muted) 80%, var(--t-text));
+    --link: color-mix(in srgb, var(--t-accent) 65%, var(--t-text));
+    --surface: var(--t-surface);
+    --accent: var(--t-accent);
+    --border: color-mix(in srgb, var(--t-text) 16%, var(--t-bg));
+    --syn: var(--muted);
+    --read-ink: var(--t-text);
+    --read-soft: var(--muted);
+    --read-rule: var(--border);
+    --img-filter: none;
+    /* Fallback first (browsers without relative colors): dark themes get the page color, light ones white. */
+    --accent-fg: #fff;
+    --tr: calc(var(--t-scale, 1) * 1px);
+    --card-r: min(var(--t-radius, 12px), 28px);
+    --col-w: 720px;
+    --tf-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --tf-heading: var(--tf-body);
+    --font: var(--tf-body);
+    --read-font: var(--tf-body);
+    --read-size: 1.125rem;
+    --pat-ink: color-mix(in srgb, var(--t-text) 13%, transparent);
+    --pat-size: calc(var(--t-scale, 1) * 22px);
+    color: var(--fg);
+    font-family: var(--tf-body);
+    background-color: var(--t-bg);
+    background-image: none;
+  }
+  .themed[data-scheme="dark"] {
+    color-scheme: dark;
+    --accent-fg: var(--t-bg);
+    --danger: #ff8a82;
+    --alert-mix: 60%;
+    --code-bg: color-mix(in srgb, var(--t-bg) 75%, #000);
+    --tok-kw: color-mix(in srgb, #ff8a82 80%, var(--t-text)); --tok-str: color-mix(in srgb, #a5d6ff 80%, var(--t-text));
+    --tok-com: color-mix(in srgb, #8b949e 80%, var(--t-text)); --tok-num: color-mix(in srgb, #79c0ff 80%, var(--t-text));
+    --tok-fn: color-mix(in srgb, #d2a8ff 80%, var(--t-text)); --tok-bi: color-mix(in srgb, #ffa657 80%, var(--t-text));
+    --tok-tag: color-mix(in srgb, #7ee787 80%, var(--t-text));
+  }
+  .themed[data-scheme="light"] {
+    color-scheme: light;
+    --danger: #d1242f;
+    --alert-mix: 40%;
+    --code-bg: color-mix(in srgb, var(--t-bg) 75%, #fff);
+    --tok-kw: color-mix(in srgb, #cf222e 80%, var(--t-text)); --tok-str: color-mix(in srgb, #0a3069 80%, var(--t-text));
+    --tok-com: color-mix(in srgb, #646d78 80%, var(--t-text)); --tok-num: color-mix(in srgb, #0550ae 80%, var(--t-text));
+    --tok-fn: color-mix(in srgb, #8250df 80%, var(--t-text)); --tok-bi: color-mix(in srgb, #953800 80%, var(--t-text));
+    --tok-tag: color-mix(in srgb, #116329 80%, var(--t-text));
+  }
+  /* Black or white on the accent, whichever reads better (OKLCH lightness threshold 0.56, measured against presets and 300 random themes: worst 4.68:1). */
+  @supports (color: oklch(from red l c h)) {
+    .themed { --accent-fg: oklch(from var(--t-accent) clamp(0, (0.56 - l) * 1000, 1) 0 0); }
+  }
+  /* The canvas (overscroll, scrollbars) follows the page theme too. */
+  &:has(> body.themed[data-scheme="dark"]) { color-scheme: dark; }
+  &:has(> body.themed[data-scheme="light"]) { color-scheme: light; }
+
+  /* ---- background ---- */
+  .themed[data-bg-type="gradient"] { background-image: linear-gradient(var(--t-angle, 135deg), var(--t-bg), var(--t-bg2)); }
+  .themed[data-bg-type="image"] { background-image: var(--t-bg-image); background-repeat: repeat; background-size: auto; }
+  .themed[data-bg-type="image"][data-bg-fit="cover"] { background-repeat: no-repeat; background-size: cover; background-position: center top; }
+  .themed[data-bg-fixed="1"] { background-attachment: fixed; }
+  .themed[data-bg-type="pattern"][data-bg-pattern="dots"] {
+    background-image: radial-gradient(circle, var(--pat-ink) calc(var(--tr) * 1.6), transparent calc(var(--tr) * 1.6 + .6px));
+    background-size: var(--pat-size) var(--pat-size);
+  }
+  .themed[data-bg-type="pattern"][data-bg-pattern="grid"] {
+    background-image: linear-gradient(var(--pat-ink) 1px, transparent 1px), linear-gradient(90deg, var(--pat-ink) 1px, transparent 1px);
+    background-size: var(--pat-size) var(--pat-size);
+  }
+  .themed[data-bg-type="pattern"][data-bg-pattern="lines"] {
+    background-image: linear-gradient(var(--pat-ink) 1px, transparent 1px);
+    background-size: 100% var(--pat-size);
+  }
+  .themed[data-bg-type="pattern"][data-bg-pattern="checker"] {
+    background-image: conic-gradient(var(--pat-ink) 25%, transparent 0 50%, var(--pat-ink) 0 75%, transparent 0);
+    background-size: calc(var(--pat-size) * 2) calc(var(--pat-size) * 2);
+  }
+  .themed[data-bg-type="pattern"][data-bg-pattern="stripes"] {
+    background-image: repeating-linear-gradient(45deg, var(--pat-ink) 0 calc(var(--pat-size) / 4), transparent calc(var(--pat-size) / 4) calc(var(--pat-size) / 2));
+  }
+  /* Grain: grey fractal noise at low opacity reads as texture on any background color. */
+  .themed[data-bg-type="pattern"][data-bg-pattern="noise"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
+    background-size: calc(var(--t-scale, 1) * 160px);
+  }
+
+  /* ---- fonts ---- */
+  .themed[data-font-body="system-serif"] { --tf-body: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif; }
+  .themed[data-font-body="system-mono"] { --tf-body: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --read-size: 1.02rem; }
+  .themed[data-font-body="inter"] { --tf-body: Inter, system-ui, sans-serif; }
+  .themed[data-font-body="lora"] { --tf-body: Lora, Georgia, serif; }
+  .themed[data-font-body="playfair"] { --tf-body: "Playfair Display", Georgia, serif; }
+  .themed[data-font-body="space-grotesk"] { --tf-body: "Space Grotesk", system-ui, sans-serif; }
+  .themed[data-font-body="jetbrains-mono"] { --tf-body: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; --read-size: 1rem; }
+  .themed[data-font-body="caveat"] { --tf-body: Caveat, "Segoe Script", "Comic Sans MS", cursive; --read-size: 1.45rem; }
+  .themed[data-font-body="press-start"] { --tf-body: "Press Start 2P", ui-monospace, Menlo, monospace; --read-size: .78rem; }
+  .themed[data-font-body="pacifico"] { --tf-body: Pacifico, "Segoe Script", cursive; --read-size: 1.05rem; }
+  .themed[data-font-body="archivo-black"] { --tf-body: "Archivo Black", Impact, system-ui, sans-serif; --read-size: 1rem; }
+
+  .themed { --tf-heading: var(--tf-body); }
+  .themed[data-font-heading="system-sans"] { --tf-heading: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .themed[data-font-heading="system-serif"] { --tf-heading: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif; }
+  .themed[data-font-heading="system-mono"] { --tf-heading: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .themed[data-font-heading="inter"] { --tf-heading: Inter, system-ui, sans-serif; }
+  .themed[data-font-heading="lora"] { --tf-heading: Lora, Georgia, serif; }
+  .themed[data-font-heading="playfair"] { --tf-heading: "Playfair Display", Georgia, serif; }
+  .themed[data-font-heading="space-grotesk"] { --tf-heading: "Space Grotesk", system-ui, sans-serif; }
+  .themed[data-font-heading="jetbrains-mono"] { --tf-heading: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; }
+  .themed[data-font-heading="caveat"] { --tf-heading: Caveat, "Segoe Script", "Comic Sans MS", cursive; }
+  .themed[data-font-heading="press-start"] { --tf-heading: "Press Start 2P", ui-monospace, Menlo, monospace; }
+  .themed[data-font-heading="pacifico"] { --tf-heading: Pacifico, "Segoe Script", cursive; }
+  .themed[data-font-heading="archivo-black"] { --tf-heading: "Archivo Black", Impact, system-ui, sans-serif; }
+
+  .themed :is(.prose, .theme-preview) :is(h1, h2, h3, h4),
+  .themed :is(.post-title, .site-title, .section-title, .more-title, .site-link, .card h2),
+  .themed.theme-preview :is(h1, h2, h3, h4) { font-family: var(--tf-heading); }
+  /* Single-weight display faces: no synthetic bold, no tight tracking, smaller sizes where the face is wide. */
+  .themed:is([data-font-heading="archivo-black"], [data-font-heading="press-start"], [data-font-heading="pacifico"]) :is(.prose h1, .prose h2, .prose h3, .prose h4, .post-title, .site-title, .section-title, .more-title, .card h2) { font-weight: 400; }
+  .themed:is([data-font-heading="press-start"], [data-font-heading="pacifico"], [data-font-heading="caveat"]) :is(.prose h1, .prose h2, .prose h3, .prose h4, .post-title, .site-title, .section-title, .more-title, .card h2) { letter-spacing: normal; }
+  .themed[data-font-heading="press-start"] :is(.post-title, .site-title) { font-size: clamp(1.25rem, 4.4vw, 2rem); line-height: 1.45; }
+  .themed[data-font-heading="press-start"] .prose :is(h1, h2, h3, h4) { font-size: 1.1em; line-height: 1.6; }
+  .themed[data-font-heading="press-start"] :is(.section-title, .more-title, .card h2) { font-size: .9rem; line-height: 1.6; }
+  .themed[data-font-heading="caveat"] :is(.post-title, .site-title) { font-size: clamp(2.4rem, 7vw, 4rem); line-height: 1.05; }
+  .themed[data-font-heading="caveat"] .prose :is(h1, h2, h3, h4) { line-height: 1.1; }
+  .themed[data-font-body="press-start"] .prose { line-height: 1.95; letter-spacing: 0; }
+  .themed[data-font-body="caveat"] .prose { line-height: 1.4; }
+  /* The Aa serif/sans switch is a no-op under a theme: the author picked the typeface. */
+  .themed .reader-settings .seg[data-setting="font"] { display: none; }
+
+  /* ---- headings ---- */
+  .themed[data-headings="upper"] :is(.prose h1, .prose h2, .prose h3, .prose h4, .post-title, .site-title, .section-title, .more-title, .card h2, .theme-preview h1, .theme-preview h2, .theme-preview h3) { text-transform: uppercase; letter-spacing: .06em; }
+  .themed[data-headings="underline"] :is(.prose h1, .prose h2, .prose h3, .post-title, .site-title, .section-title, .more-title, .theme-preview h1, .theme-preview h2) { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: .09em; text-underline-offset: .2em; }
+  .themed[data-headings="italic"] :is(.prose h1, .prose h2, .prose h3, .prose h4, .post-title, .site-title, .section-title, .more-title, .card h2, .theme-preview h1, .theme-preview h2, .theme-preview h3) { font-style: italic; }
+
+  /* ---- radius, avatars, width ---- */
+  .themed .btn, .themed .chip, .themed .badge { border-radius: var(--t-radius, 999px); }
+  .themed :is(.prose img, .prose pre, .code-block, .prose pre.mermaid, .prose details, .toc-inline, .more-card, .byline.big, .menu-pop) { border-radius: var(--card-r); }
+  .themed .prose .alert { border-radius: 0 var(--card-r) var(--card-r) 0; }
+  .themed .avatar, .themed .avatar-link { border-radius: 50%; }
+  .themed[data-avatar="square"] .avatar { border-radius: 0; }
+  .themed[data-avatar="squircle"] .avatar { border-radius: 28%; }
+  .themed[data-width="narrow"] { --col-w: 560px; }
+  .themed[data-width="medium"] { --col-w: 720px; }
+  .themed[data-width="wide"] { --col-w: 920px; }
+  /* A 920px column leaves the left gutter too small for the author rail below 1480px. */
+  .themed[data-bg-type="pattern"] .author-rail, .themed[data-bg-type="image"] .author-rail { padding: 14px; border-radius: var(--t-radius, 12px); background: color-mix(in srgb, var(--t-bg) 82%, transparent); }
+  .themed[data-width="wide"] .author-rail { display: none; }
+  @media (min-width: 1480px) { .themed[data-width="wide"] .author-rail { display: block; } }
+
+  /* ---- cards: list entries, profile sections, and the article itself ---- */
+  .themed[data-card] .theme-card { border-radius: var(--card-r); }
+  .themed:not([data-card="none"]) .card.theme-card { margin: 0 0 14px; padding: 16px 20px; }
+  .themed[data-card="flat"] .card.theme-card { border-bottom: 0; }
+  .themed[data-card="flat"] .theme-card { background: var(--surface); }
+  .themed[data-card="border"] .theme-card { background: color-mix(in srgb, var(--surface) 55%, transparent); border: 1px solid var(--border); }
+  .themed[data-card="shadow"] .theme-card { background: var(--surface); border: 1px solid color-mix(in srgb, var(--t-text) 8%, transparent); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .4), 0 2px 6px rgb(0 0 0 / .12); }
+  .themed[data-card="glass"] .theme-card {
+    background: color-mix(in srgb, var(--surface) 62%, transparent);
+    border: 1px solid color-mix(in srgb, var(--t-text) 14%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2);
+  }
+  /* The article card needs inner padding; list cards got theirs above. */
+  .themed:not([data-card="none"]) .post.theme-card { padding: 28px clamp(16px, 4vw, 36px) 32px; }
+  .themed:not([data-card="none"]) .profile-hero.theme-card, .themed:not([data-card="none"]) .about.theme-card { padding: 20px clamp(16px, 3vw, 28px); }
+  .themed:not([data-card="none"]) .theme-card.card h2 a { color: var(--fg); }
+  .themed .card h2 a:hover { color: var(--accent); }
+}
+
+/* A themed page always fills the window, so gradients/patterns reach the bottom even on short pages
+   (a background is sized to the root element's box, which is only as tall as the content). */
+body.themed { min-height: 100dvh; }
+
+/* The initial-letter avatar takes the theme's accent, so a black-and-white theme doesn't get a pink avatar. */
+:root:not([data-plain]) .themed .avatar:not(:has(img)) { background: color-mix(in srgb, var(--t-accent) 88%, var(--t-bg)); color: var(--accent-fg); }

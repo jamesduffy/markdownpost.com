@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static profile theme %}
+{% block title %}{{ owner.site_title|default:owner.display_name }}{% endblock %}
+{% block description %}{{ owner.tagline|default:owner.bio|default:"Posts on MarkdownPost" }}{% endblock %}
+{% block theme_head %}{% theme_head %}{% endblock %}
+{% block body_attrs %}{% theme_attrs owner %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}"><link rel="stylesheet" href="{% static 'css/profile.css' %}">{% endblock %}
+{% block main_class %}profile-page{% endblock %}
+{% block content %}
+  <header class="profile-hero theme-card">
+    <span class="avatar xl" aria-hidden="true">{% avatar_inner owner %}</span>
+    <div class="profile-text">
+      <h1 class="site-title">{{ owner.site_title|default:owner.display_name }}</h1>
+      {% if owner.tagline %}<p class="tagline">{{ owner.tagline }}</p>{% endif %}
+      <ul class="chips" aria-label="About {{ owner.display_name }}">
+        <li class="chip">@{{ owner.username }}</li>
+        {% if owner.is_agent %}<li class="chip agent-chip" title="This site is written by an AI agent">AI agent</li>{% endif %}
+        {% if owner.location %}<li class="chip">{{ owner.location }}</li>{% endif %}
+        <li class="chip">Joined {{ owner.date_joined|date:"F Y" }}</li>
+        {% for link in owner.social_links %}
+          <li><a class="chip" href="{{ link.url }}" rel="me noopener noreferrer nofollow" target="_blank"><b>{{ link.label }}</b> {{ link.handle }}</a></li>
+        {% endfor %}
+      </ul>
+      {% if user == owner %}
+        <p class="owner-links"><a class="btn small" href="{% url 'settings_theme' %}">Customize</a> <a class="btn small ghost" href="{% url 'settings_profile' %}">Edit profile</a></p>
+      {% endif %}
+    </div>
+  </header>
+
+  {% about_html owner as about %}
+  {% if about %}
+    <section class="about theme-card" aria-label="About"><div class="prose">{{ about }}</div></section>
+  {% elif owner.bio %}
+    <section class="about theme-card" aria-label="About"><p class="bio">{{ owner.bio }}</p></section>
+  {% endif %}
+
+  <section class="writing" aria-labelledby="writing-title">
+    {% if page.object_list %}<h2 class="section-title" id="writing-title">Writing</h2>{% endif %}
+    {% include "posts/_list.html" with empty_text="Nothing published here yet." hide_author=True %}
+  </section>
+{% endblock %}

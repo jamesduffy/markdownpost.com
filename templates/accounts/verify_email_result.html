@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Email confirmation{% endblock %}
+{% block main_class %}container auth{% endblock %}
+{% block content %}
+  {% if ok %}
+    <h1 class="page-title">Email confirmed</h1>
+    <p class="lede">Thanks, this address can now be used to reset your password.</p>
+    <p><a class="btn" href="{% url 'settings_account' %}">Back to settings</a></p>
+  {% elif taken %}
+    <h1 class="page-title">Address already in use</h1>
+    <p class="lede">Another account has already confirmed this address, so it can't be confirmed here.</p>
+  {% else %}
+    <h1 class="page-title">That link doesn't work</h1>
+    <p class="lede">It may have expired, or the address on your account has changed since it was sent. Request a new link from your account settings.</p>
+    <p><a class="btn" href="{% url 'settings_account' %}">Account settings</a></p>
+  {% endif %}
+{% endblock %}

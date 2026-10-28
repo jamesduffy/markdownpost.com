@@ -1,0 +1,40 @@
+.theme-page { max-width: 1080px; }
+.theme-layout { display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) {
+  .theme-layout { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+  .theme-preview-wrap { position: sticky; top: 16px; }
+}
+.theme-preview-wrap h2 { font-size: var(--scale1); margin: 0 0 8px; }
+.theme-controls textarea { width: 100%; font-family: var(--mono, monospace); }
+.control-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.control-grid label { display: grid; gap: 4px; }
+.control-grid input[type="color"] { width: 100%; height: 38px; padding: 2px; }
+.control-grid input[type="range"] { width: 100%; }
+[hidden] { display: none !important; }
+
+.preset-gallery { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.preset-card { position: relative; cursor: pointer; }
+.preset-card input { position: absolute; opacity: 0; inset: 0; }
+.preset-swatch { display: grid; gap: 14px; padding: 12px; border: 2px solid; border-radius: 10px; min-height: 76px; align-content: space-between; }
+.preset-name { font-weight: 700; }
+.preset-dots { display: flex; gap: 6px; }
+.preset-dots i { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(128, 128, 128, 0.5); }
+.preset-card input:checked + .preset-swatch { outline: 3px solid var(--accent); outline-offset: 2px; }
+.preset-card input:focus-visible + .preset-swatch { outline: 3px solid var(--fg); outline-offset: 2px; }
+
+.contrast-warnings { margin: 0; padding: 0; list-style: none; color: #b45309; font-size: 0.9em; }
+.contrast-warnings li.error { color: #b91c1c; font-weight: 600; }
+.js .no-js-only { display: none; }
+
+/* The sample is a themed box (theme.css paints it); these only lay out its contents. */
+.theme-preview { padding: 18px; border-radius: 12px; border: 1px solid var(--border, #8884); overflow: hidden; }
+.pv-hero { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+.pv-avatar { width: 48px; height: 48px; display: grid; place-items: center; flex: none; }
+.pv-title { margin: 0; font-size: 1.25em; font-weight: 700; }
+.pv-tagline { margin: 2px 0 0; color: var(--t-muted); }
+.pv-card { padding: 14px; }
+.pv-card h3 { margin: 0 0 8px; }
+.pv-card p { margin: 0 0 10px; }
+.pv-muted { color: var(--t-muted); }
+.pv-card pre { margin: 0 0 10px; padding: 8px; overflow: auto; }
+.pv-btn { display: inline-flex; } /* keep .btn's centering; inline-block pinned the label to the top */

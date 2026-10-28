@@ -1,0 +1,66 @@
+{% load static profile %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Discover{% endblock %} · MarkdownPost</title>
+  <meta name="description" content="{% block description %}Write and share markdown posts.{% endblock %}">
+  {% block meta %}{% endblock %}
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121317" media="(prefers-color-scheme: dark)">
+  <script src="{% static 'js/theme.js' %}"></script>
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="icon" href="{% static 'icons/icon.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="MarkdownPost">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dock.css' %}">
+  {% block head %}{% endblock %}
+  {% block theme_head %}{% endblock %}
+</head>
+<body{% if user.is_authenticated %} data-user="{{ user.pk }}"{% endif %}{% block body_attrs %}{% endblock %}>
+  <a class="skip-link" href="#main">Skip to content</a>
+  {% block header %}
+  <div class="dock" data-dock>
+    <details class="dock-details">
+      <summary class="dock-btn" aria-label="Menu" title="Menu"><span aria-hidden="true">M↓</span></summary>
+      <nav class="dock-menu" aria-label="Site menu">
+        {% if user.is_authenticated %}
+          <a class="dock-who" href="{% url 'profile' user.username %}">
+            <span class="dock-avatar">{% avatar_inner user %}</span>
+            <span class="dock-who-text"><strong>{{ user.display_name }}</strong><small>@{{ user.username }}</small></span>
+          </a>
+          <a href="{% url 'new_post' %}">Write</a>
+          <a href="{% url 'drafts' %}">Drafts</a>
+          <a href="{% url 'profile' user.username %}">My site</a>
+          <a href="{% url 'settings_theme' %}">Customize</a>
+          <a href="{% url 'discover' %}">Discover</a>
+          <a href="{% url 'settings_profile' %}">Settings</a>
+        {% else %}
+          <a class="dock-primary" href="{% url 'signup' %}">Sign up</a>
+          <a href="{% url 'login' %}">Sign in</a>
+          <a href="{% url 'discover' %}">Discover</a>
+        {% endif %}
+        <hr>
+        <button type="button" data-theme-toggle aria-label="Color theme: match system" title="Color theme"></button>
+        <button type="button" data-plain-toggle hidden aria-pressed="false">Plain view</button>
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+        {% endif %}
+      </nav>
+    </details>
+  </div>
+  {% endblock %}
+  {% if messages %}<div class="messages" role="status">{% for m in messages %}<p class="msg {{ m.tags }}">{{ m }}</p>{% endfor %}</div>{% endif %}
+  <main id="main" tabindex="-1" class="{% block main_class %}container{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/confirm.js' %}" defer></script>
+  <script src="{% static 'js/menu.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

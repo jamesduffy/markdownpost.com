@@ -1,0 +1,143 @@
+x-app-env: &app-env
+  SECRET_KEY: ${SECRET_KEY:?copy .env.example to .env and set SECRET_KEY}
+  DEBUG: ${DEBUG:-0}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+  CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+  TRUST_PROXY: ${TRUST_PROXY:-0}
+  DB_HOST: db
+  DB_NAME: ${DB_NAME:-markdownpost}
+  DB_USER: ${DB_USER:-markdownpost}
+  DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+  # s3 (default) or local. With local, files live in the "storage" volume
+  # and you don't need the rustfs profile.
+  STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
+  LOCAL_STORAGE_PATH: /data/storage
+  # Point these at any S3-compatible service to replace the bundled RustFS.
+  S3_ENDPOINT_URL: ${S3_ENDPOINT_URL-http://rustfs:9000}
+  S3_BUCKET: ${S3_BUCKET:-markdownpost}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:-markdownpost}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+  # Rate limits (defaults match config/settings.py).
+  LOGIN_LIMIT_PER_USER: ${LOGIN_LIMIT_PER_USER:-5}
+  LOGIN_LIMIT_PER_IP: ${LOGIN_LIMIT_PER_IP:-20}
+  LOGIN_LIMIT_WINDOW: ${LOGIN_LIMIT_WINDOW:-900}
+  SIGNUP_LIMIT: ${SIGNUP_LIMIT:-5}
+  SIGNUP_LIMIT_WINDOW: ${SIGNUP_LIMIT_WINDOW:-3600}
+  UPLOAD_QUOTA_BYTES: ${UPLOAD_QUOTA_BYTES:-104857600}
+  UPLOAD_RATE_LIMIT: ${UPLOAD_RATE_LIMIT:-30}
+  MCP_REQUESTS_PER_MINUTE: ${MCP_REQUESTS_PER_MINUTE:-120}
+  MCP_POSTS_PER_HOUR: ${MCP_POSTS_PER_HOUR:-20}
+  MCP_UPDATES_PER_HOUR: ${MCP_UPDATES_PER_HOUR:-200}
+  RESET_LIMIT: ${RESET_LIMIT:-5}
+  RESET_LIMIT_WINDOW: ${RESET_LIMIT_WINDOW:-3600}
+  TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
+  # HTTPS hardening (only active with TRUST_PROXY=1).
+  HSTS_SECONDS: ${HSTS_SECONDS:-31536000}
+  HSTS_INCLUDE_SUBDOMAINS: ${HSTS_INCLUDE_SUBDOMAINS:-0}
+  HSTS_PRELOAD: ${HSTS_PRELOAD:-0}
+  # 0 = Content-Security-Policy-Report-Only, 1 = enforce.
+  CSP_ENFORCE: ${CSP_ENFORCE:-1}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  # Email (password reset). Default backend prints messages to the container log.
+  EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+  EMAIL_HOST: ${EMAIL_HOST:-localhost}
+  EMAIL_PORT: ${EMAIL_PORT:-25}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+  EMAIL_USE_TLS: ${EMAIL_USE_TLS:-0}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-MarkdownPost <noreply@markdownpost.com>}
+
+x-app-build: &app-build
+  context: .
+  args:
+    # DEBUG=1 also installs requirements-dev.txt (django-debug-toolbar).
+    INSTALL_DEV: ${DEBUG:-0}
+
+services:
+  # One-shot: applies migrations once, before any web replica starts.
+  migrate:
+    build: *app-build
+    image: markdownpost-app
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build: *app-build
+    image: markdownpost-app
+    ports:
+      - "8000:8000"
+    environment: *app-env
+    volumes:
+      - storage:/data/storage
+    healthcheck:
+      # Any non-5xx answer from /offline/ means gunicorn and Django are up (a 400 from
+      # ALLOWED_HOSTS not listing 127.0.0.1, or a 301 from an HTTPS redirect, still counts).
+      test: ["CMD", "python", "-c", "import http.client as h; c=h.HTTPConnection('127.0.0.1',8000,timeout=3); c.request('GET','/offline/'); raise SystemExit(c.getresponse().status>=500)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      rustfs:
+        condition: service_started
+        required: false # only present with the "rustfs" profile
+    restart: unless-stopped
+
+  # Housekeeping: deletes uploaded images that no post uses any more (and are older than SWEEP_MIN_AGE_HOURS),
+  # once every SWEEP_INTERVAL_HOURS. Run `docker compose exec web python manage.py sweep_uploads --dry-run` to preview.
+  sweeper:
+    build: *app-build
+    image: markdownpost-app
+    command: ["sh", "-c", "while true; do python manage.py sweep_uploads --hours ${SWEEP_MIN_AGE_HOURS:-24}; sleep $$((${SWEEP_INTERVAL_HOURS:-24} * 3600)); done"]
+    environment: *app-env
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-markdownpost}
+      POSTGRES_USER: ${DB_USER:-markdownpost}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-markdownpost} -d ${DB_NAME:-markdownpost}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # Bundled S3-compatible store (RustFS). Enabled by COMPOSE_PROFILES=rustfs in .env.
+  # Skip it by using STORAGE_BACKEND=local, or point S3_* at AWS/R2/any other service.
+  rustfs:
+    profiles: ["rustfs"]
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-markdownpost}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-}
+    ports:
+      - "127.0.0.1:9001:9001" # web console
+    volumes:
+      - s3data:/data
+    restart: unless-stopped
+
+volumes:
+  storage:
+  pgdata:
+  s3data:

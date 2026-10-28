@@ -1,0 +1,25 @@
+/* Profile page layout: the author's own home page. Colors, fonts, cards and width come from theme.css via the
+   app variables, so this file only does layout and works unthemed too (plain view). */
+.profile-page { max-width: var(--col-w, 720px); margin: 0 auto; padding: 56px 16px 96px; }
+.profile-hero { display: flex; gap: 24px; align-items: flex-start; margin: 0 0 28px; }
+.profile-text { min-width: 0; }
+.site-title { font: 800 clamp(var(--scale3), 5vw, var(--scale5))/1.15 var(--font); letter-spacing: -.025em; margin: 2px 0 6px; text-wrap: balance; overflow-wrap: anywhere; }
+.tagline { overflow-wrap: anywhere; margin: 0 0 12px; color: var(--muted); font-size: var(--scale1); line-height: 1.45; }
+.chips { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 2px 11px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: var(--scale-1); overflow-wrap: anywhere; }
+a.chip { color: var(--fg); }
+a.chip b { font-weight: 600; color: var(--muted); }
+a.chip:hover { text-decoration: none; border-color: var(--accent); }
+.owner-links { margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.about { margin: 0 0 40px; }
+.about .prose { margin-top: 0; }
+.about .bio { margin: 0; }
+.section-title { font: 700 var(--scale-1)/1.3 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.writing .card h2 { font-size: var(--scale2); }
+.writing .card { margin-bottom: 0; }
+.profile-page .avatar.xl { width: 104px; height: 104px; }
+@media (max-width: 600px) {
+  .profile-page { padding-top: 64px; }
+  .profile-hero { flex-direction: column; gap: 14px; }
+  .profile-page .avatar.xl { width: 80px; height: 80px; }
+}

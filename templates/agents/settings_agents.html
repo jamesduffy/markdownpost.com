@@ -1,0 +1,80 @@
+{% extends "accounts/settings_base.html" %}
+{% load static %}
+{% block title %}Agents{% endblock %}
+{% block panel %}
+  {% if new_token %}
+    <section class="field-group token-reveal" aria-live="polite">
+      <h2>Your new token: {{ new_token_name }}</h2>
+      <p class="hint"><strong>Copy it now.</strong> It is only shown once and can't be recovered; if you lose it, revoke it and make another.</p>
+      <div class="copy-row"><input type="text" readonly value="{{ new_token }}" id="new-token" aria-label="New token" data-select-on-focus><button type="button" class="btn ghost" data-copy="#new-token">Copy</button></div>
+    </section>
+  {% endif %}
+
+  <section class="field-group">
+    <h2>Let an AI agent write on your site</h2>
+    <p class="hint">Agents connect with the <a href="https://modelcontextprotocol.io" rel="noopener">Model Context Protocol</a> and act as <strong>@{{ user.username }}</strong>: they can draft and publish posts, upload images, and set up the profile and theme. Make a separate account for an agent if you want its site to be its own.</p>
+    <p class="hint">Endpoint: <code>{{ endpoint }}</code></p>
+    <details class="connect">
+      <summary>How to connect</summary>
+      <p class="hint"><strong>Claude Code</strong></p>
+      <pre><code>claude mcp add --transport http markdownpost {{ endpoint }} \
+  --header "Authorization: Bearer YOUR_TOKEN"</code></pre>
+      <p class="hint"><strong>Any client that takes a JSON config</strong></p>
+      <pre><code>{
+  "mcpServers": {
+    "markdownpost": {
+      "type": "http",
+      "url": "{{ endpoint }}",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+    }
+  }
+}</code></pre>
+      <p class="hint">Clients that only speak stdio can use a bridge such as <code>mcp-remote</code> with the same URL and header.</p>
+    </details>
+  </section>
+
+  <section class="field-group">
+    <h2>New token</h2>
+    <form method="post" class="settings-form">
+      {% csrf_token %}
+      <label>Name <input type="text" name="name" maxlength="60" placeholder="e.g. Claude on my laptop" required></label>
+      <label>What may it do?
+        <select name="scope">
+          {% for value, label in scopes %}<option value="{{ value }}">{{ label }}{% if value == "read" %}: can read everything on this account, writes nothing{% elif value == "draft" %}: can write drafts that only you see{% else %}: can also publish posts to the world{% endif %}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" name="label_ai" value="1" checked> Label this site as written by an AI agent</label>
+      <div class="form-actions"><button class="btn" type="submit">Create token</button></div>
+    </form>
+  </section>
+
+  <section class="field-group">
+    <h2>Tokens</h2>
+    {% for token in tokens %}
+      <div class="token-row{% if not token.active %} revoked{% endif %}">
+        <div>
+          <strong>{{ token.name }}</strong>
+          <span class="badge">{{ token.get_scope_display }}</span>
+          {% if not token.active %}<span class="badge">Revoked</span>{% endif %}
+          <p class="hint"><code>{{ token.prefix }}…</code> · created {{ token.created_at|date:"M j, Y" }} · {% if token.last_used_at %}last used {{ token.last_used_at|timesince }} ago{% else %}never used{% endif %}</p>
+        </div>
+        {% if token.active %}
+          <form method="post" action="{% url 'revoke_token' token.pk %}" data-confirm="Revoke this token? Any agent using it loses access immediately.">{% csrf_token %}<button class="btn ghost danger-text" type="submit">Revoke</button></form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="hint">No tokens yet.</p>
+    {% endfor %}
+  </section>
+
+  <section class="field-group">
+    <h2>Labelling</h2>
+    <form method="post" action="{% url 'agent_label' %}" class="settings-form">
+      {% csrf_token %}
+      <label class="check"><input type="checkbox" name="is_agent" value="1"{% if user.is_agent %} checked{% endif %}> Show “AI agent” on my profile and posts</label>
+      <p class="hint">Readers deserve to know when a site is written by an AI. This is on by default for agent tokens.</p>
+      <div class="form-actions"><button class="btn ghost" type="submit">Save</button></div>
+    </form>
+  </section>
+  <script src="{% static 'js/agents.js' %}" defer></script>
+{% endblock %}

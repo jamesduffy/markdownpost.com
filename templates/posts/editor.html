@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if post %}{{ post.display_title }}{% else %}New post{% endif %}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block header %}
+  <header class="editor-bar">
+    <a class="icon-btn" href="{% if post and not post.is_draft %}{{ post.get_absolute_url }}{% else %}{% url 'discover' %}{% endif %}" aria-label="Back">←</a>
+    <span id="status" class="status" role="status">{% if not post or post.is_draft %}Draft{% endif %}</span>
+    <details class="drafts-menu" id="drafts-menu">
+      <summary class="btn ghost small" aria-label="Your drafts">Drafts{% if draft_count %} <b>{{ draft_count }}</b>{% endif %}</summary>
+      <div class="drafts-pop">
+        <a class="drafts-new" href="{% url 'new_post' %}">+ New post</a>
+        <div id="local-drafts"></div>
+        {% for d in drafts %}
+          <a href="{{ d.edit_url }}"><strong>{{ d.display_title }}</strong><span>{% if d.excerpt %}{{ d.excerpt|truncatechars:56 }} · {% endif %}{{ d.updated_at|timesince }} ago</span></a>
+        {% empty %}
+          <p class="drafts-empty">No other drafts.</p>
+        {% endfor %}
+        <a class="drafts-all" href="{% url 'drafts' %}">All drafts{% if draft_count > 8 %} ({{ draft_count }}){% endif %}</a>
+      </div>
+    </details>
+    <select id="visibility" aria-label="Who can see this post once it's saved">
+      <option value="public"{% if not post or post.visibility == 'public' %} selected{% endif %}>🌍 Public</option>
+      <option value="unlisted"{% if post.visibility == 'unlisted' %} selected{% endif %}>🔗 Unlisted</option>
+      <option value="private"{% if post.visibility == 'private' %} selected{% endif %}>🔒 Private</option>
+    </select>
+    <a id="done" class="btn" href="{% if post and not post.is_draft %}{{ post.get_absolute_url }}{% else %}{% url 'discover' %}{% endif %}">{% if not post or post.is_draft %}Save{% else %}Done{% endif %}</a>
+  </header>
+{% endblock %}
+{% block main_class %}editor-page{% endblock %}
+{% block content %}
+  <div id="editor-root" data-post-id="{{ post.id|default:'' }}" data-view-url="{% if post %}{{ post.get_absolute_url }}{% endif %}" data-csrf="{{ csrf_token }}" data-user="{{ user.pk }}" data-draft="{% if not post or post.is_draft %}1{% endif %}" data-updated="{{ post.updated_at.isoformat|default:'' }}">
+    <textarea id="title" rows="1" placeholder="Untitled" aria-label="Title" maxlength="200" autocomplete="off">{{ post.title }}</textarea>
+    <div id="editor"></div>
+  </div>
+  {{ body|json_script:"initial-body" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'dist/editor.js' %}"></script>{% endblock %}
