@@ -165,3 +165,35 @@ class ConcurrentUpdateTests(TransactionTestCase):
         [t.start() for t in threads]
         [t.join() for t in threads]
         self.assertEqual(sorted(results), [200] + [409] * 5)
+
+
+class S3BucketCheckTests(TestCase):
+    """Bucket-scoped tokens (Cloudflare R2) can't HeadBucket: that must not break every write."""
+
+    def client_error(self, code):
+        from botocore.exceptions import ClientError
+
+        return ClientError({"Error": {"Code": code, "Message": "x"}}, "HeadBucket")
+
+    def storage_with(self, head_error):
+        from unittest import mock
+
+        with mock.patch("boto3.client") as boto:
+            client = boto.return_value
+            client.head_bucket.side_effect = head_error
+            return storage.S3Storage(), client
+
+    def test_forbidden_head_bucket_is_treated_as_existing(self):
+        for code in ("403", "AccessDenied", "Forbidden"):
+            s3, client = self.storage_with(self.client_error(code))
+            s3.put("posts/a.md", b"x", "text/markdown")
+            client.create_bucket.assert_not_called()
+            client.put_object.assert_called_once()
+
+    def test_missing_bucket_is_created_and_other_errors_still_fail(self):
+        s3, client = self.storage_with(self.client_error("404"))
+        s3.put("posts/a.md", b"x", "text/markdown")
+        client.create_bucket.assert_called_once()
+        s3, _ = self.storage_with(self.client_error("500"))
+        with self.assertRaises(storage.StorageError):
+            s3.put("posts/a.md", b"x", "text/markdown")

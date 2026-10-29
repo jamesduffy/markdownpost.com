@@ -108,9 +108,16 @@ class S3Storage:
         try:
             self.client.head_bucket(Bucket=self.bucket)
         except ClientError as exc:
-            if exc.response.get("Error", {}).get("Code") not in ("404", "NoSuchBucket", "NotFound"):
+            code = exc.response.get("Error", {}).get("Code")
+            if code in ("403", "AccessDenied", "Forbidden"):
+                # A token scoped to one bucket (Cloudflare R2, least-privilege AWS keys) may read and write
+                # objects but not inspect or create buckets. Assume it exists: if it doesn't, the first put
+                # fails with a clear error instead.
+                pass
+            elif code in ("404", "NoSuchBucket", "NotFound"):
+                self.client.create_bucket(Bucket=self.bucket)
+            else:
                 raise
-            self.client.create_bucket(Bucket=self.bucket)
         self._bucket_ready = True
 
     def put(self, key, data, content_type):

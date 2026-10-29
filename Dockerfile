@@ -20,9 +20,12 @@ COPY --from=editor /out/editor.js static/dist/editor.js
 COPY --from=editor /out/rich static/dist/rich
 COPY --from=editor /out/fonts static/dist/fonts
 RUN SECRET_KEY=build python manage.py collectstatic --noinput \
+    && chmod +x /app/docker-entrypoint.sh \
     && useradd --create-home app \
     && mkdir -p /data/storage && chown -R app /app /data
 USER app
 EXPOSE 8000
-# Migrations run in the one-shot "migrate" compose service, not on boot.
+# With RUN_MIGRATIONS=1 (set in deploy/docker-compose.yml) the entrypoint migrates the database before gunicorn starts.
+# The local dev compose file instead runs migrations in a one-shot "migrate" service.
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-"]

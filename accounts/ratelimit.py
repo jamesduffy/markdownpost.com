@@ -1,5 +1,6 @@
 """Small database-backed rate limiter (shared by every gunicorn worker, survives restarts)."""
 
+import ipaddress
 import unicodedata
 from datetime import timedelta
 
@@ -12,6 +13,15 @@ from .models import RateLimitEvent
 def client_ip(request):
     """The caller's IP. Behind trusted proxies use the Nth X-Forwarded-For entry from the right (TRUSTED_PROXY_COUNT)."""
     if settings.TRUST_PROXY:
+        header = settings.CLIENT_IP_HEADER
+        if header:
+            # e.g. CF-Connecting-IP: Cloudflare sets it itself (a client can't forge it) as long as the app is only
+            # reachable through Cloudflare, which a Cloudflare Tunnel guarantees.
+            value = request.META.get("HTTP_" + header.upper().replace("-", "_"), "").strip()
+            try:
+                return str(ipaddress.ip_address(value))
+            except ValueError:
+                pass  # missing or not an IP: fall back to X-Forwarded-For below
         parts = [p.strip() for p in request.META.get("HTTP_X_FORWARDED_FOR", "").split(",") if p.strip()]
         count = max(settings.TRUSTED_PROXY_COUNT, 1)
         if len(parts) >= count:

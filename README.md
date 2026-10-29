@@ -103,7 +103,7 @@ Python deps are pinned (`==`) in `requirements.txt` (Django 6.0.x); JS deps are 
 ### Production checklist
 
 - `DEBUG=0`, a long random `SECRET_KEY`, real `DB_PASSWORD` and `S3_SECRET_KEY`.
-- The quickest way to a correct production setup is [Deploy on your own server](#deploy-on-your-own-server) (prebuilt image, Caddy and HTTPS included). If you assemble it yourself: put a TLS-terminating proxy (nginx, Caddy, ...) in front, then set `TRUST_PROXY=1` (enables the HTTPS redirect, secure cookies and HSTS), `ALLOWED_HOSTS=your.domain`, `CSRF_TRUSTED_ORIGINS=https://your.domain`, and `TRUSTED_PROXY_COUNT` to the number of proxies. The proxy must overwrite `X-Forwarded-For` and `X-Forwarded-Proto`. Do not publish port 8000 directly.
+- The quickest way to a correct production setup is [Deploy with Portainer and Cloudflare](#deploy-with-portainer-and-cloudflare) (prebuilt image, Portainer-ready, with Cloudflare Tunnel or Caddy for HTTPS). If you assemble it yourself: put a TLS-terminating proxy (nginx, Caddy, ...) in front, then set `TRUST_PROXY=1` (enables the HTTPS redirect, secure cookies and HSTS), `ALLOWED_HOSTS=your.domain`, `CSRF_TRUSTED_ORIGINS=https://your.domain`, and `TRUSTED_PROXY_COUNT` to the number of proxies. The proxy must overwrite `X-Forwarded-For` and `X-Forwarded-Proto`. Do not publish port 8000 directly.
 - The Content-Security-Policy is enforced by default; set `CSP_ENFORCE=0` to switch to report-only while debugging.
 - Configure `EMAIL_*` so verification and password reset emails are delivered (the default prints them to the log).
 - Keep the `sweeper` service running, or schedule `sweep_uploads` yourself (see [Housekeeping](#housekeeping-uploaded-images)).
@@ -124,11 +124,18 @@ docker run --rm -v markdownpostcom_s3data:/d -v "$PWD":/b alpine tar czf /b/s3da
 
 Volume names are prefixed with the compose project name (`docker volume ls`).
 
-## Deploy on your own server
+## Deploy with Portainer and Cloudflare
 
-This repo publishes a ready-to-run Docker image to GitHub's container registry, and `deploy/` has a production Compose setup that pulls it. The server needs only Docker; nothing is built there.
+This repo publishes a ready-to-run Docker image to GitHub's container registry, and `deploy/docker-compose.yml` is a production stack that pulls it. It is written for **Portainer** (or plain `docker compose`) with **Cloudflare** in front of it. Cloudflare's free plan covers everything here.
 
-You need: a Linux server (1 GB of RAM is enough to start) with Docker and the Compose plugin, a domain whose DNS A/AAAA record points at the server, and ports 80 and 443 open.
+```
+visitors -> Cloudflare (DNS, HTTPS, DDoS/bot protection) -> Cloudflare Tunnel -> http://<your server>:2255
+                                                                                        |
+                                                  web container (migrates the database as it starts)
+                                                  + Postgres  + a volume for uploads (or Cloudflare R2)
+```
+
+The example values below are for `www.markdownpost.com`, served from a machine at `10.10.10.59`. Substitute your own.
 
 ### 1. Let GitHub build the image
 
@@ -140,81 +147,82 @@ You need: a Linux server (1 GB of RAM is enough to start) with Docker and the Co
 | Push to `main` | Tests, then builds a **multi-arch (amd64 and arm64)** image and pushes it to `ghcr.io/jamesduffy/markdownpost.com` as `:latest` and `:<short-sha>`. |
 | Push a tag like `v1.2.0` | Same, and also tags the image `:1.2.0` and `:1.2` so servers can pin a release. |
 
-Setup is just pushing the repo to GitHub. There are no secrets to add: the workflow signs in to ghcr.io with the built-in `GITHUB_TOKEN`. Two things to check after the first run:
+No secrets to add: the workflow signs in to ghcr.io with the built-in `GITHUB_TOKEN`. After the first run:
 
-- **Workflow permissions.** If the push step fails with "permission denied", open the repo's *Settings → Actions → General → Workflow permissions* and choose *Read and write permissions* (organizations may restrict this).
-- **Package visibility.** New packages are private. Either make it public (github.com/jamesduffy → *Packages* → `markdownpost.com` → *Package settings* → *Change visibility*), or keep it private and sign in on the server (step 2).
+- **Package visibility.** New packages are private. Either make it public (github.com/jamesduffy → *Packages* → `markdownpost.com` → *Package settings* → *Change visibility*), or keep it private and add `ghcr.io` credentials in Portainer (*Registries* → *Add registry* → *Custom*, a [personal access token](https://github.com/settings/tokens) with only `read:packages`).
+- **Permission denied on push?** *Settings → Actions → General → Workflow permissions* → *Read and write permissions*.
 
-To cut a release: `git tag v1.0.0 && git push --tags`.
+To cut a release: `git tag v1.0.0 && git push --tags`. [`secret-scan.yml`](.github/workflows/secret-scan.yml) also scans the whole git history for secrets on every push (see "Keeping secrets out of this repo" below).
 
-The repository is public, so [`secret-scan.yml`](.github/workflows/secret-scan.yml) also scans the whole git history for secrets on every push, and a pre-commit hook blocks them locally (see "Keeping secrets out of this repo" below).
+### 2. Cloudflare: DNS, tunnel, and the free services worth turning on
 
-### 2. Set up the server
+1. **Add the domain to Cloudflare** (change the registrar's nameservers to Cloudflare's), if you haven't.
+2. **Create a tunnel.** *Zero Trust → Networks → Tunnels → Create a tunnel → Cloudflared.* Install the connector on any machine that can reach your server, for example `docker run -d --restart unless-stopped cloudflare/cloudflared:latest tunnel --no-autoupdate run --token <TOKEN>` (or let the stack run it for you: set `COMPOSE_PROFILES=tunnel` and `TUNNEL_TOKEN`, and use `http://web:8000` below).
+3. **Add a public hostname:** hostname `www.markdownpost.com`, service type **HTTP**, URL `10.10.10.59:2255`. Cloudflare creates the proxied DNS record itself. HTTPS is handled by Cloudflare; the hop through the tunnel is encrypted too.
+4. **Send the bare domain to `www`.** Add a proxied DNS record for `markdownpost.com` (type `A`, any address such as `192.0.2.1`), then *Rules → Redirect Rules* → a 301 from `markdownpost.com` to `https://www.markdownpost.com` keeping the path.
+5. **Strongly recommended: protect `/admin/` with Cloudflare Access** (free for up to 50 users). *Zero Trust → Access → Applications → Add → Self-hosted*, hostname `www.markdownpost.com`, path `admin`, and a policy that allows only your email. The Django admin then needs a Cloudflare login *before* it even shows its own.
+6. **Bot protection (free): Turnstile.** *Turnstile → Add widget* for `www.markdownpost.com` (mode *Managed*), then set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in the stack. It adds an invisible check to signup, login and password reset (and the app fails closed if Cloudflare can't be reached).
+7. **Email** is the one place the free plan falls short. Cloudflare's own *Email Sending* cannot deliver to arbitrary addresses on the free plan (it needs Workers Paid, $5 a month; it works over SMTP, and `deploy/.env.example` shows the settings). On free, use an SMTP provider with a free tier, for example [Resend](https://resend.com): add your domain there and copy the SPF/DKIM DNS records it gives you into Cloudflare DNS as *DNS only*. For **receiving** mail (e.g. `hello@markdownpost.com` forwarded to your inbox), Cloudflare *Email Routing* is free.
+8. **Storage (optional): R2.** By default uploads live in a Docker volume on your server. For Cloudflare R2 (10 GB free; Cloudflare may ask for a payment method before creating a bucket), create a bucket and an *Object Read & Write* token limited to it, then set `STORAGE_BACKEND=s3`, `S3_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com`, `S3_REGION=auto`, `S3_BUCKET` and the two keys.
 
-```sh
-git clone https://github.com/jamesduffy/markdownpost.com.git   # or just copy the deploy/ folder over
-cd markdownpost.com/deploy
-cp .env.example .env && chmod 600 .env
-```
+Cloudflare's free plan, dashboards and product limits change; check their pricing pages if something here doesn't match.
 
-Edit `.env` and set the four required values:
+### 3. Create the stack in Portainer
 
-- `MARKDOWNPOST_IMAGE`: the image, all lowercase: `ghcr.io/jamesduffy/markdownpost.com:latest` (already filled in; pin a release such as `:1.0.0` if you prefer). If you forked the repo, use your fork's image instead.
-- `DOMAIN`: e.g. `blog.example.com`. Allowed hosts and CSRF origins are derived from it.
-- `SECRET_KEY` and `DB_PASSWORD`: long random strings, e.g. `openssl rand -base64 48` for each.
+*Stacks → Add stack*, name it `markdownpost`, choose **Repository**:
 
-If the image is **private**, sign in once (create a [personal access token](https://github.com/settings/tokens) with only the `read:packages` scope):
+- **Repository URL:** `https://github.com/jamesduffy/markdownpost.com`, reference `refs/heads/main`, compose path `deploy/docker-compose.yml`.
+- **Environment variables:** use *Load variables from .env file* and paste [`deploy/.env.example`](deploy/.env.example), or add them one by one. Set at least `DOMAIN=www.markdownpost.com`, `SECRET_KEY`, `DB_PASSWORD` (long random strings), `WEB_PORT=2255` and `WEB_BIND=10.10.10.59` (the machine's LAN address, so the tunnel can reach it; `0.0.0.0` also works), plus `CLIENT_IP_HEADER=CF-Connecting-IP`. Everything else is optional.
+- **Deploy the stack.** First start pulls the images, then the web container runs the database migrations itself and starts serving; give it a minute.
 
-```sh
-echo "$GITHUB_PAT" | docker login ghcr.io -u <your-github-username> --password-stdin
-```
+Prefer not to use Git? Choose **Web editor** instead, paste the contents of `deploy/docker-compose.yml`, and enter the same variables in the **Environment variables** section directly below the editor (it's a separate box from the compose text, easy to miss). Only `SECRET_KEY` and `DB_PASSWORD` are required; every other setting has a default. A stack deployed without them loads fine but its `web` and `db` containers refuse to start and say which settings are empty.
 
-Start it:
+Then:
 
-```sh
-docker compose up -d
-docker compose ps                  # everything should become "running" / "healthy"
-docker compose logs -f web caddy   # watch the first start; Caddy fetches the HTTPS certificate
-docker compose exec web python manage.py createsuperuser   # your admin login for /admin/
-```
+1. Open the `web` container's *Console* in Portainer (command `sh`) and run `python manage.py createsuperuser` to create your admin login for `/admin/`.
+2. Visit `https://www.markdownpost.com`.
+3. To test the app directly on your LAN, the app only answers to its real hostname and expects to be behind HTTPS, so pretend to be the proxy: `curl -H "Host: www.markdownpost.com" -H "X-Forwarded-Proto: https" http://10.10.10.59:2255/offline/` should return `200`. (A plain `http://10.10.10.59:2255` in a browser gets "400 Bad Request" by design.)
 
-Then open `https://<your domain>`. The stack is: **Caddy** (HTTPS and reverse proxy, the only thing exposed), the **web** app, a one-shot **migrate** job that runs before every start, a daily **sweeper** that removes unused uploads, and **Postgres**. Post bodies and images live in a Docker volume by default (see "Storage" below).
+Portainer's menus are named slightly differently between versions; the compose file itself does not depend on any of it, it just reads `${VARIABLES}`.
 
-### Updating and rolling back
+### Upgrading (the database migrates itself)
 
-```sh
-docker compose pull && docker compose up -d
-```
+The web container applies any pending database migrations **every time it starts**, before it begins serving, under a database lock so that two containers starting at once cannot collide. So an upgrade is just "run the new image":
 
-Migrations run automatically before the new web container starts. To roll back, set `MARKDOWNPOST_IMAGE` to an earlier tag (`:1.0.0` or a `:<short-sha>`) and run `docker compose up -d` again. Pinning to release tags rather than `:latest` makes updates something you do on purpose.
+1. Push to `main` (or tag a release). GitHub Actions tests and publishes the image.
+2. In Portainer: *Stacks → markdownpost → Update the stack*, switching on **Re-pull image and redeploy**. (With `:latest` the stack file hasn't changed, so Portainer won't notice a new image by itself; pinning `MARKDOWNPOST_IMAGE` to a release tag such as `:1.1.0` and changing it in the stack's variables makes upgrades deliberate and rollbacks obvious.)
+3. Watch the `web` logs: you'll see `entrypoint: applying database migrations`, then gunicorn starting. If a migration fails the container exits and restarts instead of serving a half-migrated site; fix forward or roll back (below).
 
-### Things you'll probably want to configure
-
-- **Email.** Verification and password-reset emails are only printed to the log until you set the `EMAIL_*` values in `.env` (see the comments there).
-- **Storage.** The default `STORAGE_BACKEND=local` keeps files in the `storage` volume on this server. For S3, Cloudflare R2, Backblaze B2 and the like, set `STORAGE_BACKEND=s3` and the `S3_*` values.
-- **Sign-ups are open.** Anyone who can reach the site can create an account (rate limited to a few per hour per IP). There is no invite-only switch yet. For a private instance, restrict access at the proxy or firewall (for example Caddy's `basic_auth`, or a VPN), and see the admin's user list.
-- **Agents.** AI agents can use the site through MCP at `https://<your domain>/mcp/` with a token from Settings → Agents.
-- **Other settings** (rate limits, upload quota, HSTS options, log level) are listed in the repo's top-level `.env.example`; add any of them to `deploy/.env`.
+**Rolling back** means pointing `MARKDOWNPOST_IMAGE` at the previous tag. Migrations only go forward, so before an upgrade that includes migrations take a database backup (below), and prefer releases whose migrations are additive (new columns and tables), which older code tolerates.
 
 ### Backups
 
-Back up Postgres **and** the storage volume together:
+Back up Postgres **and** uploaded files together (skip the files if you use R2, which is its own copy). Volume names start with the stack name (here `markdownpost_pgdata` and `markdownpost_storage`; check with `docker volume ls`):
 
 ```sh
-cd markdownpost.com/deploy
-docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup-$(date +%F).sql
+docker exec markdownpost-db-1 sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup-$(date +%F).sql
 docker run --rm -v markdownpost_storage:/data -v "$PWD":/backup alpine tar czf /backup/storage-$(date +%F).tgz -C /data .
 ```
 
-If you use S3 storage, back up the bucket with your provider's tools instead. To restore, load the SQL into an empty database (`docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < backup.sql`) and extract the tarball into the volume.
+To restore, load the SQL into an empty database (`docker exec -i markdownpost-db-1 sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < backup.sql`) and extract the tarball into the volume.
+
+### Good to know
+
+- **Sign-ups are open.** Anyone who can reach the site can create an account (rate limited, and Turnstile if you enable it). There is no invite-only switch yet.
+- **Rate limits and real IPs.** With `CLIENT_IP_HEADER=CF-Connecting-IP` the app sees each visitor's real address (Cloudflare sets that header). Without it, every visitor would share the tunnel's address and one person could lock out everyone. Don't expose port 2255 to the internet: anyone who can reach it directly could fake that header.
+- **HTTPS lock-in.** The app tells browsers to insist on HTTPS for a year (`HSTS_SECONDS`). If this is a first deployment, set `HSTS_SECONDS=300` until you're happy.
+- **AI agents** can write posts through MCP at `https://www.markdownpost.com/mcp/` with a token from Settings → Agents.
+- **Not on Portainer, or on a public server?** The same file works with `docker compose up -d` and a `.env` next to it; set `COMPOSE_PROFILES=caddy` to have Caddy serve HTTPS on ports 80/443 itself.
 
 ### Troubleshooting
 
-- **No certificate / site unreachable:** the DNS record must point at the server *before* the first start, and ports 80 and 443 must be open (check your firewall and cloud security group). `docker compose logs caddy` explains what Let's Encrypt said.
-- **"400 Bad Request":** the request's host isn't in `ALLOWED_HOSTS`. Set `ALLOWED_HOSTS` to every hostname you serve.
-- **"CSRF verification failed":** `CSRF_TRUSTED_ORIGINS` must contain the full `https://` origin you browse to.
-- **`pull access denied`:** the package is private and the server isn't signed in (see step 2), or `MARKDOWNPOST_IMAGE` is misspelled or not all lowercase.
-- **Security basics:** keep `.env` private, only expose ports 22, 80 and 443, keep the server patched, and don't publish port 8000 or the database.
+- **The `web` container exits immediately saying `these required settings are empty`** (or `db` says `superuser password is not specified`): `SECRET_KEY` and/or `DB_PASSWORD` weren't passed in. Add them under the stack's Environment variables and redeploy (*Stacks → markdownpost → Editor → Environment variables → Update the stack*).
+- **Cloudflare error 1033 / 502:** the tunnel can't reach `10.10.10.59:2255`. Check `WEB_BIND` is the LAN address (or `0.0.0.0`), the container is healthy, and no firewall blocks the port from the machine running cloudflared.
+- **"400 Bad Request":** the hostname isn't in `ALLOWED_HOSTS`. It defaults to `DOMAIN`; add other names to `ALLOWED_HOSTS`.
+- **"CSRF verification failed" or a redirect loop:** the browser must reach the site as `https://www.markdownpost.com` through Cloudflare. `CSRF_TRUSTED_ORIGINS` defaults to `https://DOMAIN`.
+- **`pull access denied`:** the package is private and Portainer has no `ghcr.io` credentials, or `MARKDOWNPOST_IMAGE` isn't all lowercase.
+- **Emails never arrive:** with no `EMAIL_*` settings they are only printed to the web container's log. Otherwise check the provider's logs and that its SPF/DKIM records are in Cloudflare DNS.
+- **Migration problems:** `docker logs <web container>`; the lock is released automatically if the container dies.
 
 ### Keeping secrets out of this repo
 

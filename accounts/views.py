@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 
 from posts import storage
 
-from . import avatars, ratelimit, themes
+from . import avatars, ratelimit, themes, turnstile
 from . import emailverify
 from .forms import EmailForm, ProfileForm, SignupForm, ThemeForm, VerifiedEmailPasswordResetForm
 
@@ -37,7 +37,19 @@ class RateLimitedLoginView(LoginView):
         window = settings.LOGIN_LIMIT_WINDOW
         if any(ratelimit.is_limited(scope, key, limit, window) for scope, key, limit in self._keys(request)):
             return too_many_requests(request, window // 60)
+        if turnstile.enabled():
+            ok, error = turnstile.verify(request)
+            if not ok:
+                # Counts toward the per-IP budget only (so a bot can't hammer siteverify) and never toward the
+                # per-username budget (so it can't lock a real user out). No password check is made.
+                scope, key, _ = self._keys(request)[0]
+                ratelimit.record(scope, key)
+                form = self.get_form_class()(request=request, initial={"username": request.POST.get("username", "")})
+                return self.render_to_response(self.get_context_data(form=form, turnstile_error=error))
         return super().post(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(**turnstile.context(), **kwargs)
 
     def form_invalid(self, form):
         for scope, key, _ in self._keys(self.request):
@@ -60,10 +72,15 @@ def signup(request):
         if ratelimit.is_limited("signup", ip, settings.SIGNUP_LIMIT, window):
             return too_many_requests(request, window // 60)
         ratelimit.record("signup", ip)  # every attempt counts, valid or not
+        if turnstile.enabled():
+            ok, error = turnstile.verify(request)
+            if not ok:
+                form = SignupForm(initial={"username": request.POST.get("username", "")})
+                return render(request, "accounts/signup.html", {"form": form, "turnstile_error": error, **turnstile.context()})
         if form.is_valid():
             login(request, form.save())
             return redirect("new_post")
-    return render(request, "accounts/signup.html", {"form": form})
+    return render(request, "accounts/signup.html", {"form": form, **turnstile.context()})
 
 
 # ---- settings ---------------------------------------------------------------
@@ -215,7 +232,15 @@ class RateLimitedPasswordReset(PasswordResetView):
         if ratelimit.is_limited("password-reset", ip, settings.RESET_LIMIT, window):
             return too_many_requests(request, window // 60)
         ratelimit.record("password-reset", ip)  # every request counts, whether or not the email exists
+        if turnstile.enabled():
+            ok, error = turnstile.verify(request)
+            if not ok:
+                form = self.get_form_class()(initial={"email": request.POST.get("email", "")})
+                return self.render_to_response(self.get_context_data(form=form, turnstile_error=error))
         return super().post(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(**turnstile.context(), **kwargs)
 
 
 @login_required

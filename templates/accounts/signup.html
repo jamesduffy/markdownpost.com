@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Sign up{% endblock %}
 {% block main_class %}container auth{% endblock %}
+{% block scripts %}{% if turnstile_site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
 {% block content %}
   <h1 class="page-title">Create your account</h1>
   <form method="post" class="stack">
@@ -12,6 +13,7 @@
         {{ field.errors }}
       </label>
     {% endfor %}
+    {% include "accounts/_turnstile.html" %}
     <button class="btn" type="submit">Sign up</button>
   </form>
   <p class="meta">Already have an account? <a href="{% url 'login' %}">Log in</a></p>

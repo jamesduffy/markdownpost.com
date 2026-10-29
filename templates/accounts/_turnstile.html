@@ -1,0 +1,4 @@
+{% if turnstile_site_key %}
+{% if turnstile_error %}<ul class="errorlist"><li>{{ turnstile_error }}</li></ul>{% endif %}
+<div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
+{% endif %}

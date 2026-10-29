@@ -145,3 +145,32 @@ class PasswordResetTests(TestCase):
 
     def test_login_links_to_reset(self):
         self.assertContains(self.client.get("/login/"), "/password-reset/")
+
+
+class ClientIpHeaderTests(TestCase):
+    """Behind Cloudflare the real client IP is in CF-Connecting-IP; it is only trusted when explicitly configured."""
+
+    def req(self, **meta):
+        from django.test import RequestFactory
+
+        return RequestFactory().get("/", REMOTE_ADDR="172.18.0.5", **meta)
+
+    def test_header_used_only_when_proxy_trusted_and_configured(self):
+        from .ratelimit import client_ip
+
+        r = self.req(HTTP_CF_CONNECTING_IP="198.51.100.7", HTTP_X_FORWARDED_FOR="203.0.113.9")
+        self.assertEqual(client_ip(r), "172.18.0.5")  # TRUST_PROXY off: nothing is trusted
+        with self.settings(TRUST_PROXY=True, CLIENT_IP_HEADER=""):
+            self.assertEqual(client_ip(r), "203.0.113.9")  # old behaviour: X-Forwarded-For
+        with self.settings(TRUST_PROXY=True, CLIENT_IP_HEADER="CF-Connecting-IP"):
+            self.assertEqual(client_ip(r), "198.51.100.7")
+        with self.settings(CLIENT_IP_HEADER="CF-Connecting-IP"):  # header configured but proxy not trusted
+            self.assertEqual(client_ip(r), "172.18.0.5")
+
+    def test_bad_or_missing_header_falls_back(self):
+        from .ratelimit import client_ip
+
+        with self.settings(TRUST_PROXY=True, CLIENT_IP_HEADER="CF-Connecting-IP"):
+            self.assertEqual(client_ip(self.req(HTTP_X_FORWARDED_FOR="203.0.113.9")), "203.0.113.9")
+            self.assertEqual(client_ip(self.req(HTTP_CF_CONNECTING_IP="not-an-ip", HTTP_X_FORWARDED_FOR="203.0.113.9")), "203.0.113.9")
+            self.assertEqual(client_ip(self.req(HTTP_CF_CONNECTING_IP="2001:db8::1")), "2001:db8::1")  # IPv6 is normal

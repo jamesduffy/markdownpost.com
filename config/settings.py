@@ -200,6 +200,25 @@ _CSP = {
     "form-action": [CSP.SELF],
     "frame-ancestors": [CSP.NONE],
 }
+
+
+def csp_with_turnstile(csp, enabled):
+    """Copy of a CSP dict that also allows Cloudflare Turnstile (script + iframe); unchanged when not enabled."""
+    if not enabled:
+        return csp
+    out = {k: list(v) for k, v in csp.items()}
+    for directive in ("script-src", "frame-src"):
+        out.setdefault(directive, [CSP.SELF])  # frame-src would otherwise fall back to default-src ('self')
+        out[directive].append("https://challenges.cloudflare.com")
+    return out
+
+
+# Cloudflare Turnstile (optional CAPTCHA on signup, login and password reset). Enabled only when BOTH keys are set.
+TURNSTILE_SITE_KEY = env("TURNSTILE_SITE_KEY")
+TURNSTILE_SECRET_KEY = env("TURNSTILE_SECRET_KEY")
+TURNSTILE_ENABLED = bool(TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY)
+_CSP = csp_with_turnstile(_CSP, TURNSTILE_ENABLED)
+
 if env("CSP_ENFORCE", "1") == "1":
     SECURE_CSP = _CSP
 else:
@@ -210,6 +229,9 @@ else:
 # Nth entry from the right of X-Forwarded-For: 1 = a single proxy (nginx/Caddy), 2 = e.g. Cloudflare + nginx.
 # Too small a value makes everyone share the edge IP (and its rate-limit budget); too large lets clients spoof.
 TRUSTED_PROXY_COUNT = int(env("TRUSTED_PROXY_COUNT", "1"))
+# Header holding the real client IP when a proxy sets one (Cloudflare: CF-Connecting-IP). Only read when TRUST_PROXY=1,
+# and only safe if nothing but that proxy can reach the app. Empty = use X-Forwarded-For as above.
+CLIENT_IP_HEADER = env("CLIENT_IP_HEADER", "")
 
 # Password-reset requests allowed per IP per window (seconds); stops the form being used to spam inboxes.
 RESET_LIMIT = int(env("RESET_LIMIT", "5"))
@@ -221,7 +243,9 @@ EMAIL_HOST = env("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(env("EMAIL_PORT", "25"))
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = env("EMAIL_USE_TLS", "0") == "1"
+EMAIL_USE_TLS = env("EMAIL_USE_TLS", "0") == "1"  # STARTTLS, usually port 587
+EMAIL_USE_SSL = env("EMAIL_USE_SSL", "0") == "1"  # implicit TLS, port 465 (Cloudflare Email Sending); not with USE_TLS
+EMAIL_TIMEOUT = int(env("EMAIL_TIMEOUT", "10"))  # seconds: an unreachable mail server must not hang a signup
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "MarkdownPost <noreply@markdownpost.com>")
 
 # --- Logging (build/ops): one-line records to stdout so `docker compose logs` shows them.
