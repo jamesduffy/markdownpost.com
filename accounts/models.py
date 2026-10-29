@@ -74,3 +74,32 @@ def delete_avatar_from_storage(sender, instance, **kwargs):
     from . import avatars
 
     avatars.delete(instance.avatar_key)
+
+
+class SiteSettings(models.Model):
+    """Switches the site owner flips in the admin. Exactly one row exists (pk=1); read it with SiteSettings.load()."""
+
+    registration_open = models.BooleanField(
+        "New registrations open",
+        default=True,
+        help_text="Untick to stop new accounts being created. Existing users can still sign in.",
+    )
+
+    class Meta:
+        verbose_name = "site settings"
+        verbose_name_plural = "site settings"
+
+    def __str__(self):
+        return "Site settings"
+
+    @classmethod
+    def load(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
+def registration_open():
+    return SiteSettings.load().registration_open

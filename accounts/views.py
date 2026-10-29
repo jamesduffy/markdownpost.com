@@ -12,6 +12,7 @@ from posts import storage
 
 from . import avatars, ratelimit, themes, turnstile
 from . import emailverify
+from .models import registration_open
 from .forms import EmailForm, ProfileForm, SignupForm, ThemeForm, VerifiedEmailPasswordResetForm
 
 
@@ -65,6 +66,8 @@ class RateLimitedLoginView(LoginView):
 def signup(request):
     if request.user.is_authenticated:
         return redirect("new_post")
+    if not registration_open():
+        return render(request, "accounts/signup_closed.html", status=403)
     form = SignupForm(request.POST or None)
     if request.method == "POST":
         ip = ratelimit.client_ip(request)

@@ -14,5 +14,5 @@
     <button class="btn" type="submit">Log in</button>
   </form>
   <p class="meta"><a href="{% url 'password_reset' %}">Forgot password?</a></p>
-  <p class="meta">New here? <a href="{% url 'signup' %}">Create an account</a></p>
+  {% if registration_open %}<p class="meta">New here? <a href="{% url 'signup' %}">Create an account</a></p>{% endif %}
 {% endblock %}

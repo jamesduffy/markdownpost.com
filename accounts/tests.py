@@ -234,3 +234,36 @@ class AdminTests(TestCase):
             self.assertFalse(Post.objects.filter(pk=post.pk).exists())
             with self.assertRaises(storage.NotFound):
                 storage.get_storage().get(post.body_key)
+
+
+class RegistrationFlagTests(TestCase):
+    data = {"username": "dave", "password1": "a-long-pass-123", "password2": "a-long-pass-123"}
+
+    def close(self):
+        from accounts.models import SiteSettings
+
+        SiteSettings.objects.update_or_create(pk=1, defaults={"registration_open": False})
+
+    def test_open_by_default(self):
+        self.assertContains(self.client.get("/signup/"), "Create your account")
+        self.assertContains(self.client.get("/login/"), "Create an account")
+
+    def test_closed_blocks_signup_page_and_post(self):
+        self.close()
+        self.assertEqual(self.client.get("/signup/").status_code, 403)
+        self.assertEqual(self.client.post("/signup/", self.data).status_code, 403)
+        self.assertFalse(get_user_model().objects.filter(username="dave").exists())
+
+    def test_closed_hides_signup_links_but_login_still_works(self):
+        self.close()
+        get_user_model().objects.create_user("erin", password="a-long-pass-123")
+        page = self.client.get("/login/")
+        self.assertNotContains(page, 'href="/signup/"')
+        res = self.client.post("/login/", {"username": "erin", "password": "a-long-pass-123"})
+        self.assertEqual(res.status_code, 302)
+
+    def test_admin_page_for_superuser(self):
+        admin = get_user_model().objects.create_superuser("root", password="a-long-pass-123")
+        self.client.force_login(admin)
+        res = self.client.get("/admin/accounts/sitesettings/", follow=True)
+        self.assertContains(res, "New registrations open")

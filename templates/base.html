@@ -40,8 +40,8 @@
           <a href="{% url 'discover' %}">Discover</a>
           <a href="{% url 'settings_profile' %}">Settings</a>
         {% else %}
-          <a class="dock-primary" href="{% url 'signup' %}">Sign up</a>
-          <a href="{% url 'login' %}">Sign in</a>
+          {% if registration_open %}<a class="dock-primary" href="{% url 'signup' %}">Sign up</a>{% endif %}
+          <a {% if not registration_open %}class="dock-primary" {% endif %}href="{% url 'login' %}">Sign in</a>
           <a href="{% url 'discover' %}">Discover</a>
         {% endif %}
         <hr>

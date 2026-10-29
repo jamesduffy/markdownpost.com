@@ -8,7 +8,7 @@ from django.utils.html import format_html
 from posts.models import Post
 
 from . import ratelimit
-from .models import RateLimitEvent, User
+from .models import RateLimitEvent, SiteSettings, User
 
 admin.site.site_header = "MarkdownPost admin"
 admin.site.site_title = "MarkdownPost admin"
@@ -135,3 +135,19 @@ class RateLimitEventAdmin(admin.ModelAdmin):
     def delete_older_than_a_day(self, request, queryset):
         count, _ = queryset.filter(created_at__lt=timezone.now() - timezone.timedelta(days=1)).delete()
         self.message_user(request, f"Deleted {count} old event(s). (Delete selected events to unblock someone right away.)")
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    """One row of switches. The list page jumps straight to it; it can't be added to or deleted."""
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        from django.shortcuts import redirect
+
+        return redirect(reverse("admin:accounts_sitesettings_change", args=[SiteSettings.load().pk]))
