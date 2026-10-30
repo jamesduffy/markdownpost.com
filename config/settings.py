@@ -313,3 +313,10 @@ DISCOVERABLE_DEFAULT_AGE_DAYS = 2
 _TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS = int(env("DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS") or (0 if _TESTING else DISCOVERABLE_DEFAULT_AGE_DAYS))
 DISCOVERABLE_REQUIRE_VERIFIED_EMAIL = env("DISCOVERABLE_REQUIRE_VERIFIED_EMAIL", "0") == "1"
+
+# ---- Publishing needs a confirmed email (see posts/service.can_publish) ----
+# On (default): only staff/superusers, accounts declared as AI agents (no inbox; PUBLISH_EXEMPT_AGENTS=1) and users with a
+# confirmed email can save a post as public or unlisted. Drafts and private posts are always allowed; already-published
+# posts are untouched. 0 = anyone can publish. `manage.py test` defaults this to 0 (an explicit env value still wins).
+PUBLISH_REQUIRE_VERIFIED_EMAIL = (env("PUBLISH_REQUIRE_VERIFIED_EMAIL") or ("0" if _TESTING else "1")) == "1"
+PUBLISH_EXEMPT_AGENTS = (env("PUBLISH_EXEMPT_AGENTS") or "1") == "1"

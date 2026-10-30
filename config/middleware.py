@@ -32,6 +32,16 @@ class SecurityHeadersMiddleware:
         if EDITOR_PATH.match(request.path) and request.user.is_authenticated:
             # Lets the service worker file the cached page under this user's own cache, never a shared one.
             response.headers["X-Mdp-User"] = str(request.user.pk)
+        if not request.path.startswith("/admin/") and getattr(settings, "SECURE_CSP", None) and "text/html" in response.headers.get("Content-Type", ""):
+            from accounts import footer_script
+
+            extra = footer_script.current(request)
+            if extra:
+                # The admin-configured analytics script: allow exactly its origin, nothing broader.
+                csp = {k: list(v) for k, v in settings.SECURE_CSP.items()}
+                for directive in ("script-src", "connect-src"):
+                    csp.setdefault(directive, [CSP.SELF]).append(extra["origin"])
+                response._csp_config = csp
         if request.path.startswith("/admin/"):
             response._csp_config = {}
             response._csp_ro_config = self.ADMIN_CSP

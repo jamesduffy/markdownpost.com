@@ -99,5 +99,6 @@
   <script src="{% static 'js/confirm.js' %}" defer></script>
   <script src="{% static 'js/menu.js' %}" defer></script>
   {% block scripts %}{% endblock %}
+  {% if footer_script %}<script src="{{ footer_script.src }}"{% for name, value in footer_script.attrs %} {{ name }}{% if value %}="{{ value }}"{% endif %}{% endfor %}></script>{% endif %}
 </body>
 </html>

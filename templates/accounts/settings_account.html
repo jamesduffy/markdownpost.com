@@ -4,9 +4,9 @@
   {% if not user.email_verified %}
     <aside class="notice" role="note">
       {% if user.email %}
-        <strong>Confirm your email.</strong> We sent a link to {{ user.email }}. Until you open it, we can't reset your password if you forget it.
+        <strong>Confirm your email.</strong> We sent a link to {{ user.email }}. Until you open it, we can't reset your password if you forget it{% if publish_blocked %}, and you can't publish posts (drafts and private posts are fine){% endif %}.
       {% else %}
-        <strong>Add an email so you can reset a forgotten password.</strong> Without a confirmed email we can't reset your password. It's private and never shown on your profile.
+        <strong>Add an email so you can reset a forgotten password.</strong> Without a confirmed email we can't reset your password. It's private and never shown on your profile.{% if publish_blocked %} A confirmed email is also needed to publish posts; drafts and private posts work without it.{% endif %}
       {% endif %}
     </aside>
   {% endif %}

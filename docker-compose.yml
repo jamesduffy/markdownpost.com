@@ -36,6 +36,9 @@ x-app-env: &app-env
   # Spam gate for Discover/search/feeds/sitemap. Empty = default (2 days).
   DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS: ${DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS:-}
   DISCOVERABLE_REQUIRE_VERIFIED_EMAIL: ${DISCOVERABLE_REQUIRE_VERIFIED_EMAIL:-0}
+  # Publishing needs a confirmed email (staff and AI-agent accounts exempt). Empty = default (on; off under `manage.py test`).
+  PUBLISH_REQUIRE_VERIFIED_EMAIL: ${PUBLISH_REQUIRE_VERIFIED_EMAIL:-}
+  PUBLISH_EXEMPT_AGENTS: ${PUBLISH_EXEMPT_AGENTS:-1}
   RESET_LIMIT: ${RESET_LIMIT:-5}
   RESET_LIMIT_WINDOW: ${RESET_LIMIT_WINDOW:-3600}
   TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
@@ -53,6 +56,7 @@ x-app-env: &app-env
   EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
   EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
   EMAIL_USE_TLS: ${EMAIL_USE_TLS:-0}
+  EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
   DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-MarkdownPost <noreply@markdownpost.com>}
   # Contact form: optional email copy of messages (always stored in the admin), and report/contact rate limits.
   CONTACT_EMAIL: ${CONTACT_EMAIL:-}

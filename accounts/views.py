@@ -18,6 +18,8 @@ from .models import registration_open
 from .forms import EmailForm, ProfileForm, SignupForm, ThemeForm, VerifiedEmailPasswordResetForm
 
 
+from posts.service import can_publish
+
 User = get_user_model()
 log = logging.getLogger("accounts")
 
@@ -177,7 +179,7 @@ def settings_account(request):
         else:
             messages.success(request, "Email saved.")
         return redirect("settings_account")
-    return render(request, "accounts/settings_account.html", {"form": form, "tab": "account"})
+    return render(request, "accounts/settings_account.html", {"form": form, "tab": "account", "publish_blocked": not can_publish(request.user)})
 
 
 def _send_verification(request, user):

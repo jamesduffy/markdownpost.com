@@ -29,6 +29,7 @@ let conflict = false;
 let isDraft = root.dataset.draft === "1"; // posts start as drafts; the primary button (Publish) is what publishes them
 let publishRequested = false; // Publish was pressed but the server hasn't confirmed yet (e.g. offline)
 let failure = null; // message of the last 4xx the server rejected this content with; cleared by the next good save
+let unconfirmed = false; // the server refused to publish because the email isn't confirmed (the text is saved as a draft)
 let createMaybeSent = false; // a create request got no answer: it may exist server-side (retries reuse client_id)
 let warnedStorage = false;
 
@@ -110,18 +111,23 @@ async function flush() {
       dirty = true;
       return showConflict(data.server);
     }
+    if (res.status === 403 && data.code === "email_not_confirmed") {
+      // The server kept the content as a draft but refused to publish it: adopt the saved post, then explain.
+      adoptSaved(data);
+      publishRequested = false;
+      setDraftState(data.is_draft !== false);
+      if (data.visibility) visibilityEl.value = data.visibility;
+      unconfirmed = true;
+      showUnconfirmed(data.error, data.confirm_url);
+      dirty = view.state.doc.toString() !== payload.body || titleEl.value !== payload.title;
+      saveLocal(!dirty);
+      return setStatus("Draft saved · confirm your email to publish", true);
+    }
     if (!res.ok) throw Object.assign(new Error(data.error || "Save failed"), { status: res.status });
     failure = null;
-    if (!postId) {
-      store.remove(draftKey);
-      postId = draftKey = data.id;
-      editUrl = data.edit_url;
-      history.replaceState(null, "", data.edit_url);
-      // Make sure the editor for this new post also opens offline.
-      navigator.serviceWorker?.controller?.postMessage({ type: "cache-editor", url: data.edit_url });
-    }
-    viewUrl = data.url;
-    lastUpdated = data.updated;
+    unconfirmed = false;
+    document.querySelector(".draft-banner.unconfirmed")?.remove();
+    adoptSaved(data);
     // A retried create may have been answered with the post from the lost first attempt (old content): follow up with a PUT.
     if (creating && createMaybeSent) dirty = true;
     createMaybeSent = false;
@@ -159,6 +165,33 @@ async function flush() {
     saving = false;
     if (dirty && !timer && !conflict) schedule();
   }
+}
+
+// Take over the server's copy of a post we just saved (a first save gives it its id and address).
+function adoptSaved(data) {
+  if (!postId) {
+    store.remove(draftKey);
+    postId = draftKey = data.id;
+    editUrl = data.edit_url;
+    history.replaceState(null, "", data.edit_url);
+    // Make sure the editor for this new post also opens offline.
+    navigator.serviceWorker?.controller?.postMessage({ type: "cache-editor", url: data.edit_url });
+  }
+  viewUrl = data.url;
+  lastUpdated = data.updated;
+}
+
+// Calm notice when publishing was refused because the email isn't confirmed yet. The text is safe on the server as a draft.
+function showUnconfirmed(message, url) {
+  document.querySelector(".draft-banner")?.remove();
+  const el = document.createElement("div");
+  el.className = "draft-banner unconfirmed";
+  el.setAttribute("role", "status");
+  const text = document.createElement("span");
+  text.textContent = message || "Confirm your email address to publish. Your draft is saved.";
+  const link = Object.assign(document.createElement("a"), { href: url || "/settings/account/", textContent: "Confirm your email", className: "banner-link", target: "_blank", rel: "noopener" });
+  el.append(text, link);
+  root.prepend(el);
 }
 
 // The post was deleted from another tab/device. Keep the text as a fresh unsynced draft and let the writer decide.
@@ -491,6 +524,7 @@ doneEl.addEventListener("click", async (e) => {
     if (!conflict) setStatus(wasDraft ? "Not published yet · kept on this device, it will finish when you're back online" : "Kept on this device · it will finish saving when you're back online", true);
     return;
   }
+  if (unconfirmed) return; // the notice and status already explain it; the draft is saved
   if (failure) return setStatus(failure, true); // the server rejected this content: stay so the message can be read and fixed
   if (wasDraft && !isDraft && viewUrl) return showPublished(); // first publish: stay and say so, with the link
   if (isDraft) return setStatus("Nothing to publish yet. Add a title or some text.", true);

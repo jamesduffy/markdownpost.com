@@ -141,6 +141,11 @@ class RateLimitEventAdmin(admin.ModelAdmin):
 class SiteSettingsAdmin(admin.ModelAdmin):
     """One row of switches. The list page jumps straight to it; it can't be added to or deleted."""
 
+    fieldsets = (
+        (None, {"fields": ("registration_open",)}),
+        ("Footer script (analytics)", {"fields": ("footer_script",), "description": "Add Umami or another privacy-friendly analytics tag. Only one script tag with an https address is accepted."}),
+    )
+
     def has_add_permission(self, request):
         return False
 

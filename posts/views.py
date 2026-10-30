@@ -25,7 +25,7 @@ from accounts import ratelimit
 
 from . import helpful, seo, storage
 from .models import Post
-from .service import CLIENT_ID_RE, ApiError, apply_fields, clean_fields
+from .service import CLIENT_ID_RE, EMAIL_NOT_CONFIRMED, PUBLISH_REFUSED_MESSAGE, ApiError, apply_fields, can_publish, clean_fields
 from .render import make_excerpt, render_document, render_document_cached
 
 User = get_user_model()
@@ -172,6 +172,11 @@ def helpful_unmark(request, username, post_id):
     return response
 
 
+def post_raw_legacy(request, username, post_id):
+    """/@user/<id>/raw/ moved to /@user/<id>.md; old links keep working."""
+    return redirect(reverse("post_raw", args=[username, post_id]), permanent=True)
+
+
 def post_raw(request, username, post_id):
     post = _visible_post(request, username, post_id)
     try:
@@ -209,7 +214,8 @@ def edit_post(request, username, post_id):
 @login_required
 def drafts(request):
     """Everything the signed-in user has started but not saved yet."""
-    return render(request, "posts/drafts.html", {"page": _paginate(request, _recent_drafts(request.user).select_related("author"))})
+    page = _paginate(request, _recent_drafts(request.user).select_related("author"))
+    return render(request, "posts/drafts.html", {"page": page, "publish_blocked": not can_publish(request.user)})
 
 
 @login_required
@@ -265,14 +271,19 @@ def _parse_fields(request):
 
 
 def _post_json(post):
+    """The saved post. If a publish was refused (unconfirmed email) the content is saved as a draft and this is a 403 that
+    carries the same fields plus a stable `code`, so the editor can adopt the saved post and show the notice."""
+    refused = getattr(post, "publish_refused", False)
     return JsonResponse(
         {
+            **({"error": PUBLISH_REFUSED_MESSAGE, "code": EMAIL_NOT_CONFIRMED, "confirm_url": reverse("settings_account"), "visibility": post.visibility} if refused else {}),
             "id": post.id,
             "url": post.get_absolute_url(),
             "edit_url": post.edit_url,
             "updated": post.updated_at.isoformat(),
             "is_draft": post.is_draft,
-        }
+        },
+        status=403 if refused else 200,
     )
 
 

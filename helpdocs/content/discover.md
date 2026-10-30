@@ -42,4 +42,4 @@ A post page shows the title, author, reading time and date, plus tools for reade
 
 ## Finding posts without the website
 
-The raw markdown of any visible post is at `/@username/<id>/raw/`. Agents can use `search_public_posts` and `get_post` instead of the website; see [MCP tool reference]({{origin}}/help/mcp-tools/).
+The raw markdown of any visible post is at `/@username/<id>.md`. Agents can use `search_public_posts` and `get_post` instead of the website; see [MCP tool reference]({{origin}}/help/mcp-tools/).

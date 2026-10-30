@@ -3,6 +3,7 @@
 {% block content %}
   <h1 class="page-title">Drafts</h1>
   <p class="lede">Posts you've started but haven't published yet. Only you can see them. Your writing is autosaved here; press <strong>Publish</strong> in the editor when a post is ready.</p>
+  {% if publish_blocked %}<p class="hint">To publish, <a href="{% url 'settings_account' %}">confirm your email</a> first. Drafts and private posts work without it.</p>{% endif %}
   <p><a class="btn" href="{% url 'new_post' %}">New post</a></p>
   {% for post in page %}
     <article class="card">

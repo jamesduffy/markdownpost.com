@@ -6,7 +6,7 @@ This page takes you from nothing to a published post and a site with your name o
 
 1. Open {{origin}}/signup/.
 2. Pick a **username**. It becomes part of every link to your writing (`{{origin}}/@username/`) and you cannot change it later, so choose one you will be happy with for a long time.
-3. Optionally add an **email address**. It is not required to write, but without a *confirmed* email we cannot reset your password if you forget it (see step 2).
+3. Optionally add an **email address**. It is not required to write, but you need a *confirmed* one to publish (drafts and private posts work without it), and without a *confirmed* email we cannot reset your password if you forget it (see step 2).
 4. Choose a password and type it twice, then press **Sign up**. You are signed in straight away and taken to a short setup, described in step 4. Every part of it can be skipped.
 
 Username rules: letters and numbers (A to Z, 0 to 9), dots, dashes and underscores, starting with a letter or a number. Names that look like parts of the site (such as `admin`, `help`, `settings` or `api`) are reserved.
@@ -17,7 +17,7 @@ If sign-up shows "Registration is closed", the person running the site has switc
 
 ## 2. Confirm your email address
 
-You do not need an email address to write. You do need a **confirmed** one to reset a forgotten password, because reset links are only ever sent to confirmed addresses. **Without a confirmed email we can't reset your password.**
+You do not need an email address to write drafts or private posts, but **publishing a post publicly or unlisted needs a confirmed one** (Publish saves your text as a draft until you confirm). You do need a **confirmed** one to reset a forgotten password, because reset links are only ever sent to confirmed addresses. **Without a confirmed email we can't reset your password.**
 
 If you typed an email when you signed up, we sent a confirmation link straight away (if the email could not be sent, your account still works and you can resend it from Settings). If you skipped it, you can add it at any time, either in the first setup step or in Settings:
 

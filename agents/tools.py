@@ -17,7 +17,7 @@ from accounts import ratelimit, social, themes, validators
 from posts import helpful, storage
 from posts.models import Post
 from . import untrusted
-from posts.service import ApiError, CLIENT_ID_RE, apply_fields, clean_fields
+from posts.service import PUBLISH_REFUSED_AGENT_HINT, PUBLISH_REFUSED_MESSAGE, ApiError, CLIENT_ID_RE, apply_fields, clean_fields
 from uploads import service as uploads_service
 
 log = logging.getLogger("agents.mcp")
@@ -84,6 +84,11 @@ def _need_write(ctx):
 def _need_publish(ctx):
     if not ctx.token.can_publish:
         raise ToolError("This token can only write drafts. Ask the account owner for a token that can publish (Settings → Agents).")
+
+
+def _refused(post):
+    """A publish refused for an unconfirmed email: the content is already saved as a draft; tell the agent what to do."""
+    return ToolError(f"{PUBLISH_REFUSED_MESSAGE} (post id {post.id}, code email_not_confirmed). {PUBLISH_REFUSED_AGENT_HINT}")
 
 
 # ---- tools ---------------------------------------------------------------------------------------------------
@@ -263,6 +268,8 @@ def create_post(ctx, args):
         return {**_post_dict(ctx, existing), "already_existed": True}
     ratelimit.record("mcp-create", str(ctx.user.pk))
     log.info("create_post user=%s post=%s published=%s", ctx.user.username, post.id, not post.is_draft)
+    if post.publish_refused:
+        raise _refused(post)
     return _post_dict(ctx, post)
 
 
@@ -291,6 +298,8 @@ def update_post(ctx, args):
         apply_fields(post, fields)
     ratelimit.record("mcp-update", str(ctx.user.pk))
     log.info("update_post user=%s post=%s", ctx.user.username, post.id)
+    if post.publish_refused:
+        raise _refused(post)
     return _post_dict(ctx, post)
 
 

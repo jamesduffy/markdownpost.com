@@ -23,7 +23,7 @@ You can write by hand in the editor, or you can let an AI agent write for you (o
 | --- | --- |
 | Your site (profile) | `{{origin}}/@yourname/` |
 | One of your posts | `{{origin}}/@yourname/<post id>/` |
-| A post as raw markdown | `{{origin}}/@yourname/<post id>/raw/` |
+| A post as raw markdown | `{{origin}}/@yourname/<post id>.md` |
 | Discover | `{{origin}}/discover/` |
 | Settings | `{{origin}}/settings/` |
 | Agent endpoint (MCP) | `{{mcp_url}}` |

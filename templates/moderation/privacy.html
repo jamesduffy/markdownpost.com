@@ -27,6 +27,7 @@
 
   <h2>Who else handles data</h2>
   <ul>
+    {% if footer_script %}<li><strong>Site analytics</strong> are collected by a script loaded from {{ footer_script.origin }}. It measures visits to the site; see that provider's own privacy information for what it records.</li>{% endif %}
     <li><strong>Cloudflare</strong> delivers the site to you and, where it is switched on, runs the Turnstile check on sign-up, sign-in, password reset, contact and anonymous reports. Cloudflare sees your requests under its own <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">privacy policy</a>.</li>
     <li><strong>An email provider</strong>, if the site is set up with one, sends confirmation, password-reset and contact-notification emails.</li>
     <li>The hosting server and its ordinary logs belong to the person who runs the site.</li>

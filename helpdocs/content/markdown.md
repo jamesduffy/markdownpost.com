@@ -255,4 +255,4 @@ Each `key: value` line becomes a row. It is display only; nothing reads it as se
 - Posts can be up to 500,000 bytes.
 - Search finds words in the first 20,000 characters of a post.
 - A post's short preview (the excerpt shown in lists) is the first 200 characters of its plain text.
-- The raw markdown of any visible post is at `/@name/<id>/raw/`.
+- The raw markdown of any visible post is at `/@name/<id>.md`.

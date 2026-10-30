@@ -85,6 +85,17 @@ class SiteSettings(models.Model):
         help_text="Untick to stop new accounts being created. Existing users can still sign in.",
     )
 
+    footer_script = models.TextField(
+        "Footer script tag",
+        blank=True,
+        help_text=(
+            'One script tag from your analytics provider, for example Umami: '
+            '<script defer src="https://analytics.example.com/script.js" data-website-id="..."></script>. '
+            "It is added at the bottom of every public page and its address is allowed in the Content-Security-Policy. "
+            "Inline JavaScript is not allowed. Leave empty for none."
+        ),
+    )
+
     class Meta:
         verbose_name = "site settings"
         verbose_name_plural = "site settings"
@@ -95,6 +106,11 @@ class SiteSettings(models.Model):
     @classmethod
     def load(cls):
         return cls.objects.get_or_create(pk=1)[0]
+
+    def clean(self):
+        from . import footer_script
+
+        footer_script.parse(self.footer_script)  # raises ValidationError with a plain message
 
     def save(self, *args, **kwargs):
         self.pk = 1

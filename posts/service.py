@@ -19,6 +19,26 @@ class ApiError(Exception):
         self.message, self.status = message, status
 
 
+EMAIL_NOT_CONFIRMED = "email_not_confirmed"
+PUBLISH_REFUSED_MESSAGE = "Confirm your email address to publish. Your draft is saved."
+PUBLISH_REFUSED_AGENT_HINT = "Ask the account owner to confirm their email in Settings > Account."
+
+
+def can_publish(user):
+    """May this user make a post visible to others (public or unlisted)? The one rule for the web editor, the JSON API and MCP."""
+    if not settings.PUBLISH_REQUIRE_VERIFIED_EMAIL:
+        return True
+    if user.is_staff or user.is_superuser:
+        return True
+    if settings.PUBLISH_EXEMPT_AGENTS and user.is_agent:
+        return True  # agents have no inbox to confirm; the human who runs them vouches by declaring the account
+    return bool(user.email and user.email_verified)
+
+
+def _visible(is_draft, visibility):
+    return not is_draft and visibility != Post.Visibility.PRIVATE
+
+
 def clean_fields(data):
     """Validate untrusted post fields (a dict) and return only the known, cleaned ones. Raises ApiError."""
     fields = {}
@@ -65,6 +85,18 @@ def apply_fields(post, fields):
     """Save fields to the row and body. Call inside transaction.atomic(): the row is written first, then the
     body, so a storage failure raises and rolls the row back, leaving both untouched."""
     title = fields.get("title", post.title)
+    # Publishing needs a confirmed email. A refused publish still saves everything, as a draft (or, for a post saved
+    # privately, still private); callers check post.publish_refused after the transaction commits and report it.
+    post.publish_refused = False
+    was_visible = not post._state.adding and _visible(post.is_draft, post.visibility)
+    now_draft, now_visibility = fields.get("is_draft", post.is_draft), fields.get("visibility", post.visibility)
+    if _visible(now_draft, now_visibility) and not was_visible and not can_publish(post.author):
+        post.publish_refused = True
+        fields = dict(fields)
+        if post._state.adding or post.is_draft:
+            fields["is_draft"] = True
+        else:
+            fields["visibility"] = post.visibility
     if fields.get("is_draft") is False:
         if "body" in fields:
             body = fields["body"]
