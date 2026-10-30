@@ -1,0 +1,11 @@
+{# Side navigation, included twice: once for wide screens (always visible) and once collapsed for phones. #}
+<nav class="help-nav" aria-label="{{ nav_label|default:'Help pages' }}">
+  {% for group, pages in groups %}
+    <p class="help-nav-group">{{ group }}</p>
+    <ul>
+      {% for p in pages %}
+        <li><a href="{% url 'help_page' p.slug %}"{% if page and p.slug == page.slug %} aria-current="page"{% endif %}>{{ p.title }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</nav>

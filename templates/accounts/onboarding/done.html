@@ -1,0 +1,11 @@
+{% extends "accounts/onboarding/base.html" %}
+{% block step %}
+  <div class="onb-finish">
+    <h1 class="page-title">You're all set</h1>
+    <p class="lede">Your site is at <a href="{% url 'profile' user.username %}">/@{{ user.username }}/</a>. New posts start as drafts that only you can see, and nothing goes public until you choose to publish it.</p>
+    <p><a class="btn huge" href="{% url 'new_post' %}">Write your first post</a></p>
+    <p class="onb-secondary"><a class="quiet-link" href="{% url 'discover' %}">Browse Discover</a></p>
+    <p class="hint">Need a hand? <a href="{{ help_url }}">Read the help pages</a>.</p>
+    <p class="onb-secondary"><a class="quiet-link" href="{% url 'onboarding_site' %}">Back to setup</a></p>
+  </div>
+{% endblock %}

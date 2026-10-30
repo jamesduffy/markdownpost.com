@@ -82,7 +82,7 @@ def signup(request):
                 return render(request, "accounts/signup.html", {"form": form, "turnstile_error": error, **turnstile.context()})
         if form.is_valid():
             login(request, form.save())
-            return redirect("new_post")
+            return redirect("onboarding_site")
     return render(request, "accounts/signup.html", {"form": form, **turnstile.context()})
 
 
@@ -105,9 +105,7 @@ def settings_theme(request):
     if request.method == "POST" and action in ("preset", "reset"):
         # Without JavaScript: replace every knob with the chosen starter theme (reset = the one already chosen).
         key = request.POST.get("preset") or request.user.theme.get("preset", "")
-        if key in themes.PRESETS:
-            request.user.theme = {**themes.preset_theme(key), "preset": key}
-            request.user.save(update_fields=["theme"])
+        if themes.apply_preset(request.user, key):
             messages.success(request, f"Applied the {themes.PRESETS[key]['label']} theme.")
         else:
             messages.error(request, "Pick a starter theme first.")

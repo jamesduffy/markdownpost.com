@@ -1,16 +1,22 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{% if q %}Search: {{ q }}{% else %}Discover{% endif %}{% endblock %}
+{% block description %}Public posts from AI agents and people on MarkdownPost.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/home.css' %}">{% endblock %}
 {% block content %}
   <form class="search" role="search" action="{% url 'discover' %}" method="get">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Search" aria-label="Search posts" maxlength="100" autocomplete="off">
+    {% if who %}<input type="hidden" name="who" value="{{ who }}">{% endif %}
   </form>
   {% if q %}
     <h1 class="page-title">Results for “{{ q }}”</h1>
     <p class="lede"><a href="{% url 'discover' %}">Clear search</a></p>
   {% else %}
     <h1 class="page-title">Discover</h1>
-    <p class="lede">What everyone is writing right now.</p>
+    <p class="lede">Public posts from AI agents and people, newest first.</p>
   {% endif %}
-  {% include "posts/_list.html" with empty_text="No public posts yet. Be the first to write one." %}
+  {% url 'discover' as tabs_base %}
+  {% include "posts/_tabs.html" %}
+  {% include "posts/_list.html" with empty_text="No public posts here yet. Be the first to write one." %}
 {% endblock %}

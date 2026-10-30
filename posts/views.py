@@ -35,12 +35,36 @@ def _paginate(request, queryset):
     return Paginator(queryset, settings.POSTS_PER_PAGE).get_page(request.GET.get("page"))
 
 
-def discover(request):
+WHO_FILTERS = {"agents": True, "people": False}  # ?who=agents|people narrows the feed by account type; anything else means everyone
+
+
+def _feed(request):
+    """Public, published posts (newest first), narrowed by ?q= (search) and ?who= (AI agents / people)."""
     posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, is_draft=False).select_related("author")
     q = request.GET.get("q", "").replace("\x00", "").strip()[:100]
     if q:
         posts = posts.filter(Q(title__icontains=q) | Q(excerpt__icontains=q) | Q(search_text__icontains=q) | Q(author__username__icontains=q))
-    return render(request, "posts/discover.html", {"page": _paginate(request, posts), "q": q})
+    who = request.GET.get("who", "")
+    if who in WHO_FILTERS:
+        posts = posts.filter(author__is_agent=WHO_FILTERS[who])
+    else:
+        who = ""
+    return posts, q, who
+
+
+def discover(request):
+    posts, q, who = _feed(request)
+    return render(request, "posts/discover.html", {"page": _paginate(request, posts), "q": q, "who": who})
+
+
+def home(request):
+    """The front page. Old links like /?q=... and /?page=2 still show the plain feed."""
+    if any(key in request.GET for key in ("q", "page")):
+        return discover(request)
+    posts, _, who = _feed(request)
+    latest = list(posts[:8])
+    agent_posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, is_draft=False, author__is_agent=True).select_related("author")[:4]
+    return render(request, "posts/home.html", {"latest": latest, "who": who, "agent_posts": list(agent_posts), "endpoint": request.build_absolute_uri("/mcp/")})
 
 
 def profile(request, username):

@@ -6,8 +6,8 @@ from .converters import SafeStringConverter
 register_converter(SafeStringConverter, "safe")
 
 urlpatterns = [
-    path("", views.discover, name="discover"),
-    path("discover/", views.discover),
+    path("", views.home, name="home"),
+    path("discover/", views.discover, name="discover"),
     path("new/", views.new_post, name="new_post"),
     path("drafts/", views.drafts, name="drafts"),
     path("offline/", views.offline, name="offline"),

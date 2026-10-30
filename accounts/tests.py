@@ -6,9 +6,10 @@ class AccountTests(TestCase):
     def test_uses_custom_user_model(self):
         self.assertEqual(get_user_model()._meta.label, "accounts.User")
 
-    def test_signup_logs_in_and_redirects_to_editor(self):
+    def test_signup_logs_in_and_redirects_to_welcome(self):
         res = self.client.post("/signup/", {"username": "carol", "password1": "a-long-pass-123", "password2": "a-long-pass-123"})
-        self.assertRedirects(res, "/new/", fetch_redirect_response=False)
+        self.assertRedirects(res, "/welcome/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/welcome/").status_code, 200)
         self.assertEqual(self.client.get("/new/").status_code, 200)
 
     def test_new_post_requires_login(self):

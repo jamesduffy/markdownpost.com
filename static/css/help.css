@@ -1,0 +1,99 @@
+/* Help pages. Loaded together with post.css, which styles the rendered markdown (.prose). Mobile first. */
+.help-page { max-width: 1280px; margin: 0 auto; padding: 64px 16px 80px; }
+.help-layout { display: block; }
+.help-main { min-width: 0; }
+
+.help-crumb { margin: 0 0 6px; color: var(--muted); font-size: var(--scale-1); }
+.help-crumb a { color: var(--muted); }
+.help-title { font: 800 clamp(var(--scale3), 6vw, var(--scale5))/1.15 var(--font); letter-spacing: -.025em; margin: 0 0 10px; text-wrap: balance; }
+.help-summary { margin: 0 0 20px; color: var(--muted); font-size: var(--scale1); line-height: 1.5; max-width: 60ch; }
+
+/* ---- actions ---- */
+.help-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 0; margin: 0 0 20px; border-block: 1px solid var(--border); }
+.help-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--border); background: transparent; color: var(--fg); font: 600 var(--scale0)/1 var(--font); cursor: pointer; text-decoration: none;
+}
+.help-btn:hover { background: var(--surface); text-decoration: none; }
+.help-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.help-btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
+.help-btn[hidden] { display: none; }
+.help-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.help-btn.copied { background: color-mix(in srgb, #3fb950 22%, var(--bg)); border-color: #3fb950; color: var(--fg); }
+.help-status { min-height: 1.4em; color: var(--muted); font-size: var(--scale-1); }
+.help-status.error { color: var(--danger); }
+.help-agent-note { margin: 0 0 8px; color: var(--muted); }
+.help-agent-note code { font: .9em var(--mono); background: var(--code-bg); padding: .1em .4em; border-radius: 6px; color: var(--fg); overflow-wrap: anywhere; }
+
+/* ---- navigation: a collapsible menu on phones, a sticky sidebar on wide screens ---- */
+.help-side { display: none; }
+.help-menu, .help-toc-m { border: 1px solid var(--border); border-radius: 12px; padding: 0 14px; margin: 0 0 16px; background: var(--surface); }
+.help-menu summary, .help-toc-m summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.help-menu[open] summary, .help-toc-m[open] summary { border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.help-menu .help-nav, .help-toc-m nav { padding-bottom: 10px; }
+.help-nav-group { margin: 14px 0 4px; font: 700 var(--scale-2) var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.help-nav ul { list-style: none; margin: 0; padding: 0; }
+.help-nav a, .help-toc a, .help-toc-m a { display: block; padding: 7px 10px; border-radius: 8px; color: var(--fg); font-size: var(--scale0); line-height: 1.35; text-decoration: none; }
+.help-nav a:hover, .help-toc a:hover, .help-toc-m a:hover { background: var(--surface); text-decoration: none; }
+.help-menu .help-nav a:hover { background: var(--bg); }
+.help-nav a[aria-current="page"] { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--fg); font-weight: 700; box-shadow: inset 3px 0 0 var(--accent); }
+.help-home { display: block; padding: 7px 10px; font-weight: 700; color: var(--fg); }
+.help-toc { display: none; }
+.help-toc-m nav { display: grid; }
+.help-toc a, .help-toc-m a { color: var(--muted); font-size: var(--scale-1); padding: 5px 10px; border-left: 2px solid var(--border); border-radius: 0; }
+.help-toc a.lvl-3, .help-toc-m a.lvl-3 { padding-left: 24px; }
+.help-toc a[aria-current="true"] { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+.help-toc-title { margin: 0 0 8px; font: 700 var(--scale-2) var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---- prose tweaks (the rest comes from post.css) ---- */
+.help-page .prose { margin-top: 8px; --read-size: 1.0625rem; }
+.help-page .prose > :first-child { margin-top: 0; }
+.help-page .prose h2 { margin-top: 2.2em; }
+.help-page .prose table { font-size: var(--scale-1); }
+.help-page .prose th { white-space: normal; }
+.help-page .prose td code { white-space: nowrap; }
+.help-page .prose pre { max-width: 100%; }
+.help-page .prose .code-block { max-width: 100%; }
+
+/* ---- previous / next ---- */
+.help-pager { display: grid; gap: 12px; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); }
+.help-pager a { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 14px; color: var(--fg); text-decoration: none; }
+.help-pager a:hover { border-color: var(--accent); background: var(--surface); }
+.help-pager small { color: var(--muted); font-size: var(--scale-2); letter-spacing: .06em; text-transform: uppercase; }
+.help-pager span { font-weight: 650; }
+.help-pager .next { text-align: right; }
+
+/* ---- index ---- */
+.help-group { margin-top: 36px; }
+.help-group h2 { font: 700 var(--scale1) var(--font); margin: 0 0 12px; }
+.help-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.help-card { display: grid; gap: 3px; height: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 14px; color: var(--fg); text-decoration: none; }
+.help-card:hover { border-color: var(--accent); background: var(--surface); }
+.help-card span { color: var(--muted); font-size: var(--scale-1); line-height: 1.45; }
+
+@media (min-width: 600px) {
+  .help-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .help-pager { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 900px) {
+  .help-page { padding-top: 40px; }
+  .help-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 48px; align-items: start; }
+  .help-side { display: block; position: sticky; top: 24px; max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; padding-right: 8px; }
+  .help-menu { display: none; }
+  .help-index .help-main { max-width: 860px; }
+}
+
+@media (min-width: 1200px) {
+  .help-layout { grid-template-columns: 240px minmax(0, 720px) 220px; gap: 40px; }
+  .help-toc { display: block; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; }
+  .help-toc-m { display: none; }
+}
+
+/* the dock sits at the top right on every page; keep the title clear of it on phones */
+@media (max-width: 600px) { .help-title { padding-right: 52px; } }
+
+@media print {
+  .help-side, .help-menu, .help-toc, .help-toc-m, .help-actions, .help-pager { display: none !important; }
+  .help-layout { display: block; }
+}

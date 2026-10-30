@@ -112,6 +112,15 @@ def preset_theme(key):
     return copy.deepcopy(PRESETS[key]["theme"])
 
 
+def apply_preset(user, key):
+    """Replace every theme knob with the starter theme `key`. Returns False when the key is not a preset."""
+    if key not in PRESETS:
+        return False
+    user.theme = {**preset_theme(key), "preset": key}
+    user.save(update_fields=["theme"])
+    return True
+
+
 # ---- colour math --------------------------------------------------------------------------------------------
 
 

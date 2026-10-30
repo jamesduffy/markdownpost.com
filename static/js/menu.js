@@ -11,7 +11,8 @@
       const show = () => {
         const on = root.hasAttribute("data-plain");
         plain.setAttribute("aria-pressed", String(on));
-        plain.textContent = on ? "Show author's theme" : "Plain view";
+        const text = plain.querySelector("span");
+        (text || plain).textContent = on ? "Show author's theme" : "Plain view";
       };
       plain.addEventListener("click", () => {
         const on = root.toggleAttribute("data-plain");
@@ -24,15 +25,22 @@
 
   const details = dock && dock.querySelector("details");
   if (!details) return;
+  const summary = details.querySelector("summary");
+  const sync = () => summary.setAttribute("aria-expanded", String(details.open));
   const close = (refocus) => {
     if (!details.open) return;
     details.open = false;
-    if (refocus) details.querySelector("summary").focus();
+    if (refocus) summary.focus();
   };
-  document.addEventListener("click", (e) => { if (!details.contains(e.target)) close(false); });
+  sync();
+  details.addEventListener("toggle", sync);
+  // A click on the dimmed backdrop (the phone bottom sheet) lands on <details> itself; clicks anywhere else outside also close.
+  document.addEventListener("click", (e) => { if (e.target === details || !details.contains(e.target)) close(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(true); });
+  // Tabbing out of the menu closes it, so it never stays open behind the page you moved on to.
+  details.addEventListener("focusout", (e) => { if (e.relatedTarget && !details.contains(e.relatedTarget)) close(false); });
   details.addEventListener("click", (e) => {
-    // Choosing a link (or the in-page toggles) dismisses the menu; Log out submits its form first.
+    // Choosing a link (or the in-page toggle) dismisses the menu; Sign out submits its form first.
     if (e.target.closest("a, [data-plain-toggle]")) close(false);
   });
 })();

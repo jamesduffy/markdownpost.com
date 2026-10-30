@@ -21,14 +21,14 @@ class DockTests(TestCase):
         self.assertContains(r, 'data-dock')
         self.assertContains(r, 'href="/signup/"')
         self.assertContains(r, 'href="/login/"')
-        self.assertNotContains(r, "Log out")
+        self.assertNotContains(r, "Sign out")
         self.assertNotContains(r, "Customize")
         self.assertNotContains(r, 'class="site-header"')
 
     def test_signed_in_menu(self):
         self.client.force_login(self.alice)
         r = self.client.get("/")
-        for text in ("Write", "Drafts", "My site", "Customize", "Discover", "Settings", "Log out", "@alice"):
+        for text in ("Write a post", "Drafts", "My site", "Customize", "Discover", "Help", "Settings", "Agents", "Sign out", "@alice"):
             self.assertContains(r, text)
         self.assertNotContains(r, "/admin/")
         self.assertNotContains(r, 'href="/signup/"')
@@ -75,6 +75,56 @@ class DockTests(TestCase):
         r = self.client.get("/offline/")
         self.assertContains(r, "dock-btn")
         self.assertNotContains(r, "alice")
+
+    def test_button_says_menu_with_icon_and_no_cryptic_glyph(self):
+        html = self.client.get("/").content.decode()
+        summary = html[html.index('<summary class="dock-btn"'):html.index("</summary>")]
+        self.assertIn(">Menu<", summary)
+        self.assertIn("<svg", summary)
+        self.assertNotIn("M↓", html)
+
+    def test_menu_groups_are_labelled_and_icons_hidden_from_readers(self):
+        self.client.force_login(self.alice)
+        html = self.client.get("/").content.decode()
+        menu = html[html.index('<nav class="dock-menu"'):html.index("</nav>", html.index('<nav class="dock-menu"'))]
+        self.assertEqual(menu.count('role="group"'), menu.count('aria-labelledby="dock-g-'))
+        for label in ("Your site", "Explore", "Settings"):
+            self.assertIn(f'class="dock-label"', menu)
+            self.assertIn(label, menu)
+        self.assertEqual(menu.count("<svg"), menu.count('<svg aria-hidden="true"'))
+        self.assertLess(menu.index("Write a post"), menu.index("My site"))
+        self.assertLess(menu.index("Sign out"), len(menu))
+
+    def test_anonymous_menu_order_and_help_link(self):
+        menu = self.client.get("/").content.decode()
+        menu = menu[menu.index('<nav class="dock-menu"'):]
+        positions = [menu.index(t) for t in ("Join MarkdownPost", "Sign in", "Discover", 'href="/help/"')]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_single_dock_and_skip_link(self):
+        html = self.client.get("/").content.decode()
+        self.assertEqual(html.count("data-dock"), 1)
+        self.assertEqual(html.count('class="dock-details"'), 1)
+        self.assertIn('class="skip-link" href="#main"', html)
+
+    def test_no_inline_script_or_handlers_in_menu(self):
+        self.client.force_login(self.alice)
+        html = self.client.get("/").content.decode()
+        dock = html[html.index("data-dock"):html.index("</main>")]
+        self.assertNotRegex(dock, r"\son[a-z]+=")
+        self.assertNotIn("javascript:", dock)
+        self.assertNotRegex(html, r"<script(?![^>]*\bsrc=)[^>]*>")
+
+    def test_menu_js_handles_escape_outside_click_focus_and_aria(self):
+        js = (STATIC / "js/menu.js").read_text()
+        for needle in ("Escape", "aria-expanded", "focusout", "summary.focus()"):
+            self.assertIn(needle, js)
+
+    def test_css_has_phone_sheet_and_reduced_motion(self):
+        css = (STATIC / "css/dock.css").read_text()
+        self.assertIn("prefers-reduced-motion", css)
+        self.assertIn("max-width: 640px", css)
+        self.assertIn("min-height: 44px", css)
 
     def test_css_is_independent_of_theme_variables(self):
         css = (STATIC / "css/dock.css").read_text()

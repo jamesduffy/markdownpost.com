@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ page.title }} · Help{% endblock %}
+{% block description %}{{ page.summary }}{% endblock %}
+{% block meta %}
+  <link rel="canonical" href="{{ origin }}{% url 'help_page' page.slug %}">
+  <link rel="alternate" type="text/markdown" href="{% url 'help_page_md' page.slug %}" title="{{ page.title }} (markdown)">
+  <link rel="alternate" type="text/plain" href="{% url 'llms_txt' %}" title="llms.txt">
+{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}"><link rel="stylesheet" href="{% static 'css/help.css' %}">{% endblock %}
+{% block main_class %}help-page{% endblock %}
+
+{% block content %}
+  <div class="help-layout">
+    <aside class="help-side">
+      <a class="help-home" href="{% url 'help_index' %}">Help home</a>
+      {% include "helpdocs/_nav.html" %}
+    </aside>
+
+    <details class="help-menu">
+      <summary>All help pages</summary>
+      {% include "helpdocs/_nav.html" with nav_label="Help pages (menu)" %}
+    </details>
+
+    <article class="help-main" id="help-article">
+      <p class="help-crumb"><a href="{% url 'help_index' %}">Help</a> <span aria-hidden="true">/</span> {{ page.group }}</p>
+      <h1 class="help-title">{{ page.title }}</h1>
+      <p class="help-summary">{{ page.summary }}</p>
+
+      <div class="help-actions" role="group" aria-label="Page actions">
+        <button type="button" class="help-btn primary" data-copy-source="#help-md" data-copy-done="Copied page as markdown" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+          <span data-copy-label>Copy page as markdown</span>
+        </button>
+        <a class="help-btn" href="{% url 'help_page_md' page.slug %}">View raw</a>
+        <span class="help-status" role="status" aria-live="polite" data-copy-status></span>
+      </div>
+
+      {% if toc %}
+        <details class="help-toc-m">
+          <summary>On this page</summary>
+          <nav aria-label="On this page (menu)">
+            {% for item in toc %}<a class="lvl-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>{% endfor %}
+          </nav>
+        </details>
+      {% endif %}
+
+      <div class="prose" id="prose">{{ doc.html|safe }}</div>
+
+      <nav class="help-pager" aria-label="Previous and next page">
+        {% if prev_page %}<a class="prev" href="{% url 'help_page' prev_page.slug %}" rel="prev"><small>Previous</small><span>{{ prev_page.title }}</span></a>{% else %}<span></span>{% endif %}
+        {% if next_page %}<a class="next" href="{% url 'help_page' next_page.slug %}" rel="next"><small>Next</small><span>{{ next_page.title }}</span></a>{% endif %}
+      </nav>
+    </article>
+
+    {% if toc %}
+      <aside class="help-toc" aria-label="On this page">
+        <p class="help-toc-title">On this page</p>
+        <nav aria-label="On this page">
+          {% for item in toc %}<a class="lvl-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>{% endfor %}
+        </nav>
+      </aside>
+    {% endif %}
+  </div>
+  {{ markdown|json_script:"help-md" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/help.js' %}" defer></script>{% if has_rich %}<script type="module" src="{% static 'dist/rich/rich.js' %}"></script>{% endif %}{% endblock %}

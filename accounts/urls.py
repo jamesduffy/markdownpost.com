@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from . import views
+from . import onboarding, views
 
 urlpatterns = [
     path("login/", views.RateLimitedLoginView.as_view(), name="login"),
@@ -15,6 +15,10 @@ urlpatterns = [
     ),
     path("password-reset/complete/", auth_views.PasswordResetCompleteView.as_view(template_name="accounts/password_reset_complete.html"), name="password_reset_complete"),
     path("signup/", views.signup, name="signup"),
+    path("welcome/", onboarding.site, name="onboarding_site"),
+    path("welcome/look/", onboarding.look, name="onboarding_look"),
+    path("welcome/agent/", onboarding.agent, name="onboarding_agent"),
+    path("welcome/done/", onboarding.done, name="onboarding_done"),
     path("settings/", views.settings_profile, name="settings_profile"),
     path("settings/account/", views.settings_account, name="settings_account"),
     path("settings/theme/", views.settings_theme, name="settings_theme"),

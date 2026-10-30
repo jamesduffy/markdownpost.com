@@ -46,6 +46,8 @@ class ProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name, hint in self.placeholders.items():
+            if name not in self.fields:
+                continue  # subclasses (onboarding) may offer only some fields
             # Plain CharFields: URLField would reject a bare handle before our cleaner ever sees it.
             self.fields[name] = forms.CharField(
                 required=False,
@@ -107,6 +109,26 @@ class ProfileForm(forms.ModelForm):
             if old_key and old_key != user.avatar_key:
                 avatars.delete(old_key)
         return user
+
+
+class OnboardingSiteForm(ProfileForm):
+    """Step 1 of /welcome/: the same fields and validators as Settings, just fewer of them."""
+
+    class Meta(ProfileForm.Meta):
+        fields = ("full_name", "site_title", "tagline", "bio")
+        labels = {"full_name": "Your name", "site_title": "Site title", "tagline": "Tagline", "bio": "Short bio"}
+        widgets = {
+            "full_name": forms.TextInput(attrs={"autocomplete": "name", "placeholder": "Ada Lovelace"}),
+            "site_title": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "My corner of the internet"}),
+            "tagline": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "Notes on code, coffee and other things"}),
+            "bio": forms.Textarea(attrs={"rows": 3, "maxlength": 300, "placeholder": "A sentence or two about you and what you write."}),
+        }
+
+    def clean_site_title(self):
+        return validate_plain_text(self.cleaned_data["site_title"]).strip()
+
+    def clean_tagline(self):
+        return validate_plain_text(self.cleaned_data["tagline"]).strip()
 
 
 class EmailForm(forms.ModelForm):

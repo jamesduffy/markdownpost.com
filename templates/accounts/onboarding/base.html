@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ step.label }} · Welcome{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/onboarding.css' %}">{% endblock %}
+{% block main_class %}container narrow onboarding{% endblock %}
+{% block content %}
+  <nav class="steps" aria-label="Setup progress">
+    <p class="steps-count">Step {{ step.number }} of {{ total }}</p>
+    <ol>
+      {% for s in steps %}
+        <li{% if s.current %} aria-current="step"{% endif %}{% if s.done %} class="done"{% endif %}>
+          <a href="{% url s.name %}"><span class="steps-num" aria-hidden="true">{% if s.done %}✓{% else %}{{ s.number }}{% endif %}</span><span class="steps-label">{{ s.label }}</span></a>
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+  {% block step %}{% endblock %}
+{% endblock %}

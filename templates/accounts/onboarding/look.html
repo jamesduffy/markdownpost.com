@@ -1,0 +1,30 @@
+{% extends "accounts/onboarding/base.html" %}
+{% load static theme %}
+{% block theme_head %}{% theme_head %}{% endblock %}
+{% block step %}
+  <h1 class="page-title">Choose a look</h1>
+  <p class="lede">Pick a starting point for your profile and posts. Each one shows how your site would look. You can change everything later in <a href="{% url 'settings_theme' %}">the full customizer</a>.</p>
+
+  <form method="post" class="onb-form" novalidate>
+    {% csrf_token %}
+    {% if error %}<p class="errorlist" role="alert">{{ error }}</p>{% endif %}
+    <div class="look-grid" role="radiogroup" aria-label="Starter themes">
+      {% for key, label, t in presets %}
+        <label class="look-card">
+          <input type="radio" name="preset" value="{{ key }}"{% if current == key %} checked{% endif %}>
+          <span{% theme_attrs t extra_class="theme-preview look-preview" %} aria-hidden="true">
+            <span class="look-title">{{ user.site_title|default:user.display_name }}</span>
+            <span class="look-text">Notes, drafts and <span class="look-link">links</span>.</span>
+            <span class="look-dots"><i></i><i></i><i></i></span>
+          </span>
+          <span class="look-name">{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+    <div class="onb-actions">
+      <button class="btn big" type="submit">Use this look</button>
+      <a class="quiet-link" href="{% url next_url %}">Skip this step</a>
+      <a class="quiet-link" href="{% url back_url %}">Back</a>
+    </div>
+  </form>
+{% endblock %}

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "posts",
     "uploads",
     "agents",
+    "helpdocs",
 ]
 
 MIDDLEWARE = [

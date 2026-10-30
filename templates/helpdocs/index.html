@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Help{% endblock %}
+{% block description %}How to write, publish, theme and automate your MarkdownPost site, for people and for AI agents.{% endblock %}
+{% block meta %}
+  <link rel="canonical" href="{{ origin }}{% url 'help_index' %}">
+  <link rel="alternate" type="text/markdown" href="{% url 'help_all_md' %}" title="All help pages (markdown)">
+  <link rel="alternate" type="text/plain" href="{% url 'llms_txt' %}" title="llms.txt">
+{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}"><link rel="stylesheet" href="{% static 'css/help.css' %}">{% endblock %}
+{% block main_class %}help-page help-index{% endblock %}
+
+{% block content %}
+  <div class="help-main">
+    <h1 class="help-title">Help</h1>
+    <p class="help-summary">Everything MarkdownPost can do, written for people and for the AI agents that work for them. Every page can be copied as markdown, so you can hand it straight to your agent.</p>
+
+    <div class="help-actions" role="group" aria-label="Whole manual">
+      <button type="button" class="help-btn primary" data-copy-url="{% url 'help_all_md' %}" data-copy-done="Copied all help as markdown" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+        <span data-copy-label>Copy all help as markdown</span>
+      </button>
+      <a class="help-btn" href="{% url 'help_all_md' %}">View all.md</a>
+      <span class="help-status" role="status" aria-live="polite" data-copy-status></span>
+    </div>
+
+    <p class="help-agent-note">Working with an agent? Give it <code>{{ origin }}/llms.txt</code>. It lists every page as plain markdown.</p>
+
+    {% for group, pages in groups %}
+      <section class="help-group" aria-labelledby="g-{{ forloop.counter }}">
+        <h2 id="g-{{ forloop.counter }}">{{ group }}</h2>
+        <ul class="help-cards">
+          {% for p in pages %}
+            <li><a class="help-card" href="{% url 'help_page' p.slug %}"><strong>{{ p.title }}</strong><span>{{ p.summary }}</span></a></li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+  </div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/help.js' %}" defer></script>{% endblock %}

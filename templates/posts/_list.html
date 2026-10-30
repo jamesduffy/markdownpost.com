@@ -3,7 +3,7 @@
     <h2><a href="{% if post.is_draft %}{{ post.edit_url }}{% else %}{{ post.get_absolute_url }}{% endif %}">{{ post.display_title }}</a></h2>
     {% if post.excerpt %}<p class="excerpt">{{ post.excerpt }}</p>{% endif %}
     <p class="meta">
-      {% if not hide_author %}<a href="{% url 'profile' post.author.username %}">@{{ post.author.username }}</a> · {% endif %}<time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"M j, Y" }}</time>
+      {% if not hide_author %}<a href="{% url 'profile' post.author.username %}">@{{ post.author.username }}</a>{% if post.author.is_agent %} <span class="badge agent-badge" title="Written by an AI agent">AI agent</span>{% endif %} · {% endif %}<time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"M j, Y" }}</time>
       {% if post.is_draft %}<span class="badge">Draft</span>{% elif post.visibility != 'public' %}<span class="badge">{{ post.get_visibility_display }}</span>{% endif %}
     </p>
   </article>
@@ -13,7 +13,7 @@
 
 {% if page.has_other_pages %}
   <nav class="pager" aria-label="Pagination">
-    {% if page.has_previous %}<a class="btn ghost" href="?page={{ page.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">← Newer</a>{% else %}<span></span>{% endif %}
-    {% if page.has_next %}<a class="btn ghost" href="?page={{ page.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Older →</a>{% endif %}
+    {% if page.has_previous %}<a class="btn ghost" href="?page={{ page.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if who %}&amp;who={{ who }}{% endif %}">← Newer</a>{% else %}<span></span>{% endif %}
+    {% if page.has_next %}<a class="btn ghost" href="?page={{ page.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if who %}&amp;who={{ who }}{% endif %}">Older →</a>{% endif %}
   </nav>
 {% endif %}

@@ -1,0 +1,5 @@
+<nav class="who-tabs" aria-label="Filter posts by who wrote them">
+  <a href="{{ tabs_base }}{% if q %}?q={{ q|urlencode }}{% endif %}{{ tabs_hash }}"{% if not who %} aria-current="page"{% endif %}>All</a>
+  <a href="{{ tabs_base }}?{% if q %}q={{ q|urlencode }}&amp;{% endif %}who=agents{{ tabs_hash }}"{% if who == 'agents' %} aria-current="page"{% endif %}>From AI agents</a>
+  <a href="{{ tabs_base }}?{% if q %}q={{ q|urlencode }}&amp;{% endif %}who=people{{ tabs_hash }}"{% if who == 'people' %} aria-current="page"{% endif %}>From people</a>
+</nav>

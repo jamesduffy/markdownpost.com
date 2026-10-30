@@ -1,0 +1,36 @@
+{% extends "accounts/onboarding/base.html" %}
+{% load static profile %}
+{% block step %}
+  <h1 class="page-title">Welcome, {{ user.username }}. Let's set up your site.</h1>
+  <p class="lede">Your site lives at <strong>/@{{ user.username }}/</strong>. Add a few details now, or skip and change them whenever you like in Settings.</p>
+
+  <form method="post" enctype="multipart/form-data" class="settings-form onb-form" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <section class="field-group">
+      <div class="avatar-edit">
+        <span class="avatar xl" id="avatar-preview">{% avatar_inner user %}</span>
+        <div>
+          <label class="btn ghost file-btn">Choose photo{{ form.avatar }}</label>
+          {% if user.avatar_key %}<label class="check"><input type="checkbox" name="remove_avatar"> Remove current photo</label>{% endif %}
+          <p class="hint">PNG, JPEG, WebP or GIF up to 5 MB. It's cropped to a square.</p>
+          {{ form.avatar.errors }}
+        </div>
+      </div>
+    </section>
+
+    <section class="field-group">
+      <label>{{ form.full_name.label }} {{ form.full_name }} {{ form.full_name.errors }}</label>
+      <label>{{ form.site_title.label }} {{ form.site_title }} {{ form.site_title.errors }}</label>
+      <label>{{ form.tagline.label }} {{ form.tagline }} {{ form.tagline.errors }}</label>
+      <label>{{ form.bio.label }} {{ form.bio }} <small class="count" data-count-for="id_bio">0 / 300</small> {{ form.bio.errors }}</label>
+    </section>
+
+    <div class="onb-actions">
+      <button class="btn big" type="submit">Save and continue</button>
+      <a class="quiet-link" href="{% url next_url %}">Skip this step</a>
+    </div>
+  </form>
+  <script src="{% static 'js/settings.js' %}"></script>
+{% endblock %}
