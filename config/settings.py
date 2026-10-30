@@ -166,6 +166,11 @@ UPLOAD_QUOTA_BYTES = int(os.environ.get("UPLOAD_QUOTA_BYTES", 100 * 1024 * 1024)
 UPLOAD_RATE_LIMIT = int(os.environ.get("UPLOAD_RATE_LIMIT", 30))  # uploads per user per hour
 POSTS_PER_PAGE = 20
 
+# "Download my data" zip (Settings -> Account): built synchronously, so bounded. Size = uncompressed bytes of posts + images.
+EXPORT_RATE_LIMIT = int(env("EXPORT_RATE_LIMIT", "3"))  # per account per 24 hours
+EXPORT_MAX_BYTES = int(env("EXPORT_MAX_BYTES", str(150 * 1024 * 1024)))
+EXPORT_MAX_SECONDS = int(env("EXPORT_MAX_SECONDS", "60"))
+
 # Django Debug Toolbar: only when DEBUG=1 and the dev requirements are installed.
 if DEBUG:
     try:

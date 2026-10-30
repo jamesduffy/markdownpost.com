@@ -34,6 +34,15 @@
     <a class="btn ghost" href="{% url 'password_change' %}">Change password</a>
   </section>
 
+  <section class="field-group">
+    <h2>Download my data</h2>
+    <p class="hint">A zip with every post (drafts and private ones too) as a markdown file, your images, profile and theme settings. Your email and password are not included. <a href="{% url 'help_page' 'export' %}">How the file is laid out</a></p>
+    <form method="post" action="{% url 'export_data' %}" class="settings-form">
+      {% csrf_token %}
+      <div class="form-actions"><button class="btn ghost" type="submit">Download my data</button></div>
+    </form>
+  </section>
+
   <section class="field-group danger-zone">
     <h2>Delete account</h2>
     <p class="hint">This permanently deletes your profile and every post you've written. It can't be undone.</p>

@@ -68,6 +68,14 @@ Set `STORAGE_BACKEND` in `.env`:
 
 All settings are documented in `.env.example`. Compose only forwards variables listed in the `x-app-env` block of `docker-compose.yml`, so add new settings there too.
 
+### Exporting an account
+
+Users download their data (Settings → Account → Download my data, POST `/settings/export/`): a zip with `manifest.json` (schema version), `profile.json`, `posts/<id>.md` (YAML front matter, drafts and private posts included), `images/` and `README.txt`. No email, password hash or tokens. It is built synchronously into a temp file, limited by `EXPORT_RATE_LIMIT` (3 per 24 h per account), `EXPORT_MAX_BYTES` (150 MB uncompressed) and `EXPORT_MAX_SECONDS` (60). Format: [`helpdocs/content/export.md`](helpdocs/content/export.md). The operator can build one with no limits:
+
+```sh
+docker compose exec web python manage.py export_account <username> -o /tmp/username.zip
+```
+
 ### Housekeeping: uploaded images
 
 Pasting or dropping an image into the editor uploads it immediately, but nothing knows whether the post that uses it is ever saved, or whether you later delete that text. `sweep_uploads` removes uploaded images that **no post body references** and that are **older than a grace period** (24 hours by default, so an image you just pasted is safe). It only ever touches images recorded in the `uploads` table (and never avatars), so images that predate that table are left alone, and it aborts without deleting anything if any post body can't be read.

@@ -26,5 +26,6 @@ urlpatterns = [
     path("settings/password/", views.PasswordChange.as_view(), name="password_change"),
     path("settings/verify/resend/", views.resend_verification, name="resend_verification"),
     path("verify-email/<str:token>/", views.verify_email, name="verify_email"),
+    path("settings/export/", views.export_data, name="export_data"),
     path("settings/delete/", views.delete_account, name="delete_account"),
 ]
