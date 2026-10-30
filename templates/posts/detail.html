@@ -24,7 +24,7 @@
 {% endblock %}
 {% block theme_head %}{% theme_head %}{% endblock %}
 {% block body_attrs %}{% theme_attrs post.author %}{% endblock %}
-{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}">{% if seo.feed_url %}<link rel="alternate" type="application/atom+xml" title="{{ seo.feed_title }}" href="{{ seo.feed_url }}">{% endif %}{% if seo.markdown_url %}<link rel="alternate" type="text/markdown" href="{{ seo.markdown_url }}">{% endif %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}"><link rel="stylesheet" href="{% static 'css/tags.css' %}">{% if seo.feed_url %}<link rel="alternate" type="application/atom+xml" title="{{ seo.feed_title }}" href="{{ seo.feed_url }}">{% endif %}{% if seo.markdown_url %}<link rel="alternate" type="text/markdown" href="{{ seo.markdown_url }}">{% endif %}{% endblock %}
 {% block main_class %}reader-page{% endblock %}
 
 {% block content %}
@@ -64,6 +64,12 @@
             </span>
           {% endif %}
         </div>
+
+        {% if post_tags %}
+          <ul class="tag-list post-tags" aria-label="Tags">
+            {% for slug in post_tags %}<li>{% if seo.noindex %}<span class="tag-chip">{{ slug }}</span>{% else %}<a class="tag-chip" href="{% url 'tag_page' slug %}">{{ slug }}</a>{% endif %}</li>{% endfor %}
+          </ul>
+        {% endif %}
 
         <div class="actions" role="toolbar" aria-label="Post actions">
           <button type="button" class="act" data-action="copy-link" title="Copy link" aria-label="Copy link">

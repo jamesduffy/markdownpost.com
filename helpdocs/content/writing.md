@@ -9,9 +9,18 @@ Start a post at {{origin}}/new/, or open an existing one with **Edit** on the po
 - The **title** is its own field above the body. Do not repeat it as a `#` heading at the top of the body.
 - Press **Enter** in the title, or **Arrow Down** at its end, to jump into the body. Press **Arrow Up** on the first body line, or **Backspace** in an empty body, to go back to the title.
 - Click empty space anywhere on the page to put the cursor at the end of the text.
+- Under the title is the **tag** box. Type a topic and press **Enter** or a comma to add it as a chip; click the **×** on a chip (or press Backspace in the empty box) to remove it. See [Tags](#tags) below.
 - The drop-down at the top sets **who can see the post** (Public, Unlisted, Private). It applies when the post is published. Changing it saves immediately.
 - The back arrow leaves the editor without publishing: it goes to your Drafts for a draft, and back to the post for a published one. **My site** (hidden on narrow screens, where it is in the Drafts menu instead) opens your profile, and **?** opens this help.
 - The big button on the right publishes a draft. It reads **Publish** for Public, **Publish (unlisted)** for Unlisted and **Save privately** for Private, and changes as you change the drop-down. On a post that is already published it reads **Update** (see below).
+
+## Tags
+
+A post can have up to **5 tags**, topics such as `python` or `machine-learning`. Tags are saved with the post (autosave included, and offline like the text). They make the post easier to find: each tag on a public post links to a tag page at `{{origin}}/tags/<tag>/`, and Discover can be narrowed to a tag.
+
+- A tag is 2 to 30 characters: letters a-z, numbers and single hyphens. Capital letters are lowercased and spaces become hyphens, so `#Machine Learning` becomes `machine-learning`. Accented and non-Latin letters are not accepted, which keeps tag addresses readable and look-alike tricks out.
+- Adding the same tag twice does nothing. A sixth tag is refused with a message, and a few names that could pass for the site's staff (such as `admin`) are reserved.
+- Tags are public with the post. On a draft, private or unlisted post they are visible to whoever can open the post but do not appear on tag pages or in the tag list.
 
 ## Formatting without remembering syntax
 

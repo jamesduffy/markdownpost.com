@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from . import storage
-from .models import Helpful, Post
+from .models import Helpful, Post, Tag
 
 
 def _set_visibility(modeladmin, request, queryset, visibility):
@@ -56,6 +56,17 @@ class HelpfulAdmin(admin.ModelAdmin):
         return format_html('<a href="{}">{}</a> by @{}', reverse("admin:posts_post_change", args=[obj.post_id]), obj.post.display_title, obj.post.author.username)
 
 
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    """Tags are created by authors. Deleting one here (say, an abusive tag) removes it from every post; it never deletes a post."""
+
+    list_display = ("slug", "created_at")
+    search_fields = ("slug",)
+    ordering = ("-created_at",)
+    list_per_page = 100
+    readonly_fields = ("created_at",)
+
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ("display_title", "author_link", "is_draft", "visibility", "discoverable", "excerpt_short", "created_at", "updated_at", "site_link")
@@ -64,14 +75,14 @@ class PostAdmin(admin.ModelAdmin):
     list_select_related = ("author",)
     search_fields = ("id", "title", "excerpt", "author__username", "author__full_name")
     date_hierarchy = "created_at"
-    autocomplete_fields = ("author",)
+    autocomplete_fields = ("author", "tags")
     ordering = ("-created_at",)
     list_per_page = 50
     inlines = (HelpfulInline,)
     actions = ("make_public", "make_unlisted", "make_private", "mark_draft")
     readonly_fields = ("id", "created_at", "updated_at", "excerpt", "links", "body_preview")
     fieldsets = (
-        (None, {"fields": ("title", "author", "is_draft", "visibility")}),
+        (None, {"fields": ("title", "author", "is_draft", "visibility", "tags")}),
         ("Content", {"fields": ("excerpt", "body_preview", "links")}),
         ("Metadata", {"fields": ("id", "created_at", "updated_at")}),
     )

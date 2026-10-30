@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static feed %}
+{% block title %}#{{ tag.slug }}{% endblock %}
+{% block description %}Public posts tagged {{ tag.slug }} on MarkdownPost.{% endblock %}
+{% block meta %}
+  {% if seo.noindex %}<meta name="robots" content="noindex">{% else %}<link rel="canonical" href="{{ seo.canonical }}">{% endif %}
+{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/home.css' %}"><link rel="stylesheet" href="{% static 'css/tags.css' %}"><link rel="alternate" type="application/atom+xml" title="#{{ tag.slug }} (Atom feed)" href="{{ seo.feed_url }}">{% endblock %}
+{% block content %}
+  <h1 class="page-title">#{{ tag.slug }}</h1>
+  <p class="lede">Public posts with this tag, {% if sort %}the most helpful lately first{% else %}newest first{% endif %}. <a href="{% url 'tag_list' %}">All tags</a> · <a href="{% url 'feed_tag' tag.slug %}">Atom feed</a> · <a href="{% url 'discover' %}?tag={{ tag.slug }}">Search within this tag</a></p>
+  {% url 'tag_page' tag.slug as tabs_base %}
+  {% include "posts/_tabs.html" %}
+  {% include "posts/_list.html" with empty_text="No public posts with this tag yet." %}
+{% endblock %}

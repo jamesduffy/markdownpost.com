@@ -8,6 +8,7 @@ import { createUploader } from "./images.js";
 import { livePreview } from "./livepreview.js";
 import { canMarkSynced, classifyFailure, clientIdFor, menuDrafts, primaryLabel, publishedMessage, restorableNew, savedStatus } from "./logic.js";
 import { slashMenu } from "./slash.js";
+import { createTagInput } from "./tags.js";
 import { createToolbar } from "./toolbar.js";
 
 const root = document.getElementById("editor-root");
@@ -54,6 +55,7 @@ const snapshot = (synced) => ({
   title: titleEl.value,
   body: view.state.doc.toString(),
   visibility: visibilityEl.value,
+  tags: tagInput.get(),
   base: lastUpdated,
   publish: publishRequested,
   failed: !!failure,
@@ -86,7 +88,7 @@ async function flush() {
   clearTimeout(timer);
   timer = null;
   if (saving || !dirty || locked || conflict) return;
-  const payload = { title: titleEl.value, body: view.state.doc.toString(), visibility: visibilityEl.value };
+  const payload = { title: titleEl.value, body: view.state.doc.toString(), visibility: visibilityEl.value, tags: tagInput.get() };
   const creating = !postId;
   if (creating) payload.client_id = clientIdFor(draftKey); // same id on every retry, so a lost response can't duplicate the post
   if (!postId && !payload.title.trim() && !payload.body.trim()) {
@@ -119,7 +121,7 @@ async function flush() {
       if (data.visibility) visibilityEl.value = data.visibility;
       unconfirmed = true;
       showUnconfirmed(data.error, data.confirm_url);
-      dirty = view.state.doc.toString() !== payload.body || titleEl.value !== payload.title;
+      dirty = view.state.doc.toString() !== payload.body || titleEl.value !== payload.title || tagsKey() !== (payload.tags || []).join();
       saveLocal(!dirty);
       return setStatus("Draft saved · confirm your email to publish", true);
     }
@@ -136,7 +138,7 @@ async function flush() {
       setDraftState(false);
     }
     // A body typed while the request was in flight stays unsynced; otherwise this is now the synced copy.
-    const typedSince = view.state.doc.toString() !== payload.body || titleEl.value !== payload.title;
+    const typedSince = view.state.doc.toString() !== payload.body || titleEl.value !== payload.title || tagsKey() !== (payload.tags || []).join();
     if (typedSince) dirty = true;
     const pending = dirty;
     saveLocal(!pending);
@@ -274,8 +276,9 @@ document.addEventListener("click", (e) => {
 
 // ---- restoring + conflicts -------------------------------------------------------
 
-function applyContent({ title, body, visibility }) {
+function applyContent({ title, body, visibility, tags }) {
   titleEl.value = title ?? "";
+  if (tags) tagInput.set(tags);
   growTitle();
   if (visibility) visibilityEl.value = visibility;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: body ?? "" } });
@@ -350,7 +353,7 @@ function restore() {
   editUrl = editUrl || local.editUrl || null;
   const localBase = local.base ? Date.parse(local.base) : 0;
   const serverBase = lastUpdated ? Date.parse(lastUpdated) : 0;
-  const differs = local.body !== view.state.doc.toString() || local.title !== titleEl.value;
+  const differs = local.body !== view.state.doc.toString() || local.title !== titleEl.value || (local.tags && local.tags.join() !== tagsKey());
   if (!postId || localBase > serverBase || (localBase === serverBase && !local.synced)) {
     // This device has the newest copy (typed offline, or the page came from the offline cache).
     lastUpdated = local.base || lastUpdated;
@@ -464,6 +467,10 @@ titleEl.addEventListener("keydown", (e) => {
   }
 });
 growTitle();
+// An editor page cached before tags existed has no tag box: then tags are simply left out of the save (the server keeps them).
+const tagsBox = document.getElementById("tags");
+const tagInput = tagsBox ? createTagInput(tagsBox, JSON.parse(document.getElementById("initial-tags")?.textContent || "[]"), schedule) : { get: () => undefined, set() {} };
+const tagsKey = () => (tagInput.get() || []).join();
 restore();
 store.prune();
 fillLocalDrafts();
@@ -474,7 +481,7 @@ if (!locked) {
 
 // The whole page is the writing surface: clicking empty space puts the cursor at the end.
 document.addEventListener("mousedown", (e) => {
-  if (e.button !== 0 || e.target.closest("#title, .cm-editor, .cm-tooltip, .fmt-bar, header, button, a, select, input")) return;
+  if (e.button !== 0 || e.target.closest("#title, .tag-input, .cm-editor, .cm-tooltip, .fmt-bar, header, button, a, select, input")) return;
   e.preventDefault();
   view.focus();
   view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });

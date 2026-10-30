@@ -4,9 +4,11 @@ and search; drafts, unlisted and private posts never appear). Django's sitemap i
 
 from django.contrib.auth import get_user_model
 from django.contrib.sitemaps import Sitemap
+from django.conf import settings
 from django.db.models import Max
 from django.urls import reverse
 
+from . import tags
 from .models import Post
 
 User = get_user_model()
@@ -41,4 +43,19 @@ class ProfileSitemap(Sitemap):
         return user.sitemap_lastmod
 
 
-SITEMAPS = {"posts": PostSitemap, "profiles": ProfileSitemap}
+class TagSitemap(Sitemap):
+    """Tag pages only once they have TAG_MIN_POSTS discoverable posts (the same bar that lifts their noindex)."""
+
+    limit = 50000
+
+    def items(self):
+        return list(tags.listed_tags(settings.TAG_MIN_POSTS))
+
+    def location(self, tag):
+        return reverse("tag_page", args=[tag.slug])
+
+    def lastmod(self, tag):
+        return tag.touched
+
+
+SITEMAPS = {"posts": PostSitemap, "profiles": ProfileSitemap, "tags": TagSitemap}

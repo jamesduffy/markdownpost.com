@@ -23,8 +23,8 @@ from uploads import service as uploads_service
 
 from accounts import ratelimit
 
-from . import helpful, seo, storage
-from .models import Post
+from . import helpful, seo, storage, tags
+from .models import Post, Tag
 from .service import CLIENT_ID_RE, EMAIL_NOT_CONFIRMED, PUBLISH_REFUSED_MESSAGE, ApiError, apply_fields, can_publish, clean_fields
 from .render import make_excerpt, render_document, render_document_cached
 
@@ -43,13 +43,17 @@ def _paginate(request, queryset):
 WHO_FILTERS = {"agents": True, "people": False}  # ?who=agents|people narrows the feed by account type; anything else means everyone
 
 
-def _feed(request):
-    """Public, published posts, narrowed by ?q= (search) and ?who= (AI agents / people). Newest first, or with
+def _feed(request, tag=""):
+    """Public, published posts, narrowed by ?q= (search), ?who= (AI agents / people) and ?tag= (or `tag`, a clean slug the
+    caller already knows, as on a tag page). Newest first, or with
     ?sort=helpful by the stored helpful rank (no votes last), newest first among equals. Returns (posts, q, who, sort)."""
     posts = Post.objects.discoverable().select_related("author")
     q = request.GET.get("q", "").replace("\x00", "").strip()[:100]
     if q:
         posts = posts.filter(Q(title__icontains=q) | Q(excerpt__icontains=q) | Q(search_text__icontains=q) | Q(author__username__icontains=q))
+    tag = tag or tags.from_query(request.GET.get("tag"))
+    if tag:
+        posts = posts.filter(tags__slug=tag)
     who = request.GET.get("who", "")
     if who in WHO_FILTERS:
         posts = posts.filter(author__is_agent=WHO_FILTERS[who])
@@ -63,7 +67,38 @@ def _feed(request):
 
 def discover(request):
     posts, q, who, sort = _feed(request)
-    return render(request, "posts/discover.html", {"page": _paginate(request, posts), "q": q, "who": who, "sort": sort})
+    tag = tags.from_query(request.GET.get("tag"))
+    return render(request, "posts/discover.html", {"page": _paginate(request, posts), "q": q, "who": who, "sort": sort, "tag_slug": tag})
+
+
+def tag_list(request):
+    """Tags that have enough discoverable posts to be worth browsing, most recently used first. No counts, ever."""
+    page = Paginator(tags.listed_tags(settings.TAG_MIN_POSTS), 60).get_page(request.GET.get("page"))
+    return render(request, "posts/tags.html", {"page": page})
+
+
+def tag_redirect(request, slug):
+    return redirect("tag_page", slug=slug.lower(), permanent=True)
+
+
+def tag_page(request, slug):
+    """Discoverable posts with one tag, sorted like Discover. A tag nobody discoverable uses is a 404 (it must not
+    reveal tags that exist only on private, unlisted, draft or spam-gated posts). Thin tag pages say noindex."""
+    clean = tags.from_query(slug)
+    if not clean:
+        raise Http404
+    if clean != slug:
+        return redirect("tag_page", slug=clean, permanent=True)
+    tag = get_object_or_404(Tag, slug=clean)
+    base = Post.objects.discoverable().filter(tags=tag)
+    enough = base.values("pk")[: settings.TAG_MIN_POSTS].count() >= settings.TAG_MIN_POSTS
+    if not enough and not base.exists():
+        raise Http404
+    posts, q, who, sort = _feed(request, tag=clean)
+    page = _paginate(request, posts)
+    url = request.build_absolute_uri(reverse("tag_page", args=[clean]))
+    seo_values = {"noindex": not enough or bool(q or who or sort), "canonical": url, "feed_url": request.build_absolute_uri(reverse("feed_tag", args=[clean]))}
+    return render(request, "posts/tag.html", {"tag": tag, "page": page, "q": q, "who": who, "sort": sort, "seo": seo_values})
 
 
 def home(request):
@@ -123,7 +158,7 @@ def post_detail(request, username, post_id):
     )
     author_posts = Post.objects.filter(author=post.author, visibility=Post.Visibility.PUBLIC, is_draft=False).count()
     is_owner = request.user.pk == post.author_id
-    context = {"post": post, "doc": doc, "more": more, "author_posts": author_posts, "is_owner": is_owner, "seo": seo.post_seo(request, post, doc)}
+    context = {"post_tags": post.tag_slugs, "post": post, "doc": doc, "more": more, "author_posts": author_posts, "is_owner": is_owner, "seo": seo.post_seo(request, post, doc)}
     if helpful.markable(post) and not is_owner:
         # Only the viewer's own state; never anyone's count.
         context["helpful_open"] = True
@@ -192,7 +227,7 @@ def _recent_drafts(user, exclude=None):
 @login_required
 def new_post(request):
     drafts = _recent_drafts(request.user)
-    return render(request, "posts/editor.html", {"post": None, "body": "", "drafts": drafts[:8], "draft_count": drafts.count()})
+    return render(request, "posts/editor.html", {"post": None, "body": "", "post_tags": [], "drafts": drafts[:8], "draft_count": drafts.count()})
 
 
 @login_required
@@ -203,7 +238,7 @@ def edit_post(request, username, post_id):
     except storage.StorageError:
         return _unavailable(request)
     drafts = _recent_drafts(request.user, exclude=post)
-    return render(request, "posts/editor.html", {"post": post, "body": body, "drafts": drafts[:8], "draft_count": drafts.count()})
+    return render(request, "posts/editor.html", {"post": post, "body": body, "post_tags": post.tag_slugs, "drafts": drafts[:8], "draft_count": drafts.count()})
 
 
 @login_required
@@ -277,6 +312,7 @@ def _post_json(post):
             "edit_url": post.edit_url,
             "updated": post.updated_at.isoformat(),
             "is_draft": post.is_draft,
+            "tags": post.tag_slugs,
         },
         status=403 if refused else 200,
     )
@@ -327,6 +363,7 @@ def api_update(request, post_id):
                     "server": {
                         "title": post.title,
                         "body": storage.get_body(post),
+                        "tags": post.tag_slugs,
                         "visibility": post.visibility,
                         "is_draft": post.is_draft,
                         "updated": post.updated_at.isoformat(),

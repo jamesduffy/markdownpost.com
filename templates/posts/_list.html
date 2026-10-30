@@ -14,7 +14,7 @@
 
 {% if page.has_other_pages %}
   <nav class="pager" aria-label="Pagination">
-    {% if page.has_previous %}<a class="btn ghost" href="{% feed_url '' q who sort page.previous_page_number %}">← {% if sort %}Previous{% else %}Newer{% endif %}</a>{% else %}<span></span>{% endif %}
-    {% if page.has_next %}<a class="btn ghost" href="{% feed_url '' q who sort page.next_page_number %}">{% if sort %}Next{% else %}Older{% endif %} →</a>{% endif %}
+    {% if page.has_previous %}<a class="btn ghost" href="{% feed_url '' q who sort page.previous_page_number '' tag_slug %}">← {% if sort %}Previous{% else %}Newer{% endif %}</a>{% else %}<span></span>{% endif %}
+    {% if page.has_next %}<a class="btn ghost" href="{% feed_url '' q who sort page.next_page_number '' tag_slug %}">{% if sort %}Next{% else %}Older{% endif %} →</a>{% endif %}
   </nav>
 {% endif %}

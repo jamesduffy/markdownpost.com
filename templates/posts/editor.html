@@ -34,8 +34,14 @@
 {% block content %}
   <div id="editor-root" data-post-id="{{ post.id|default:'' }}" data-view-url="{% if post %}{{ post.get_absolute_url }}{% endif %}" data-csrf="{{ csrf_token }}" data-user="{{ user.pk }}" data-draft="{% if not post or post.is_draft %}1{% endif %}" data-updated="{{ post.updated_at.isoformat|default:'' }}">
     <textarea id="title" rows="1" placeholder="Untitled" aria-label="Title" maxlength="200" autocomplete="off">{{ post.title }}</textarea>
+    <div id="tags" class="tag-input">
+      <ul class="tag-chips" aria-label="Tags"></ul>
+      <input class="tag-field" type="text" maxlength="60" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Add a tag (press Enter or comma)" aria-describedby="tag-hint" enterkeyhint="done">
+      <span class="tag-hint" id="tag-hint" role="status"></span>
+    </div>
     <div id="editor"></div>
   </div>
   {{ body|json_script:"initial-body" }}
+  {{ post_tags|json_script:"initial-tags" }}
 {% endblock %}
 {% block scripts %}<script src="{% static 'dist/editor.js' %}"></script>{% endblock %}

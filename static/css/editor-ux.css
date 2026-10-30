@@ -24,3 +24,17 @@
   header.editor-bar .bar-help { margin-left: auto; }
   .editor-bar .status { order: 10; flex-basis: 100%; }
 }
+
+/* Tag input under the title: chips with a remove button, then a borderless text field that grows to fill the row. */
+.tag-input { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 16px; min-height: 44px; cursor: text; }
+.tag-input .tag-chips { display: contents; list-style: none; margin: 0; padding: 0; }
+.tag-input .tag-chip { display: inline-flex; align-items: center; gap: 2px; min-height: 32px; padding: 0 4px 0 12px; border: 1px solid var(--border); border-radius: 999px; font-size: var(--scale-1); color: var(--fg); overflow-wrap: anywhere; }
+.tag-input .tag-chip::before { content: "#"; color: var(--muted); margin-right: 1px; }
+.tag-input .tag-x { display: inline-grid; place-items: center; width: 28px; height: 28px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: var(--scale1); line-height: 1; position: relative; }
+.tag-input .tag-x::after { content: ""; position: absolute; inset: -8px; } /* 44px hit area */
+.tag-input .tag-x:hover { background: var(--surface); color: var(--fg); }
+.tag-input .tag-field { flex: 1 1 140px; min-width: 120px; min-height: 44px; border: 0; outline: 0; background: transparent; color: var(--fg); font: inherit; font-size: var(--scale-1); padding: 0; }
+.tag-input .tag-field::placeholder { color: var(--syn); }
+.tag-input .tag-field[aria-invalid] { color: var(--danger); }
+.tag-input .tag-hint { flex-basis: 100%; color: var(--danger); font-size: var(--scale-1); }
+.tag-input .tag-hint:empty { display: none; }
