@@ -5,14 +5,14 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetView
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
 from posts import storage
 
-from . import avatars, ratelimit, themes, turnstile
+from . import avatars, export, ratelimit, themes, turnstile
 from . import emailverify
 from .models import registration_open
 from .forms import EmailForm, ProfileForm, SignupForm, ThemeForm, VerifiedEmailPasswordResetForm
@@ -266,6 +266,28 @@ class RateLimitedPasswordReset(PasswordResetView):
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(**turnstile.context(), **kwargs)
+
+
+@login_required
+@require_POST
+def export_data(request):
+    """Build and download the zip of the signed-in user's own data (POST only: CSRF-protected, never prefetched)."""
+    user = request.user
+    if ratelimit.is_limited(export.RATE_SCOPE, str(user.pk), settings.EXPORT_RATE_LIMIT, export.RATE_WINDOW):
+        return too_many_requests(request, export.RATE_WINDOW // 60, "settings")
+    ratelimit.record(export.RATE_SCOPE, str(user.pk))
+    try:
+        tmp = export.build(user, settings.EXPORT_MAX_BYTES, settings.EXPORT_MAX_SECONDS)
+    except export.ExportError as exc:
+        messages.error(request, str(exc))
+        return redirect("settings_account")
+    except storage.StorageError:
+        log.exception("export failed for user %s", user.pk)
+        messages.error(request, "We couldn't read your files from storage just now. Try again in a few minutes.")
+        return redirect("settings_account")
+    response = FileResponse(tmp, as_attachment=True, filename=f"markdownpost-{user.username}.zip", content_type="application/zip")
+    response["Cache-Control"] = "private, no-store"
+    return response
 
 
 @login_required
