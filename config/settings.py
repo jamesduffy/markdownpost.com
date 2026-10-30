@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "agents",
     "helpdocs",
     "moderation",
+    "follows",
     "django.contrib.sitemaps",
 ]
 
@@ -293,6 +294,10 @@ HELPFUL_HALF_LIFE_DAYS = float(env("HELPFUL_HALF_LIFE_DAYS", "14"))  # a vote co
 HELPFUL_LIMIT_PER_HOUR = int(env("HELPFUL_LIMIT_PER_HOUR", "60"))  # mark/undo actions per account, and separately per IP address
 HELPFUL_REQUIRE_VERIFIED_EMAIL = env("HELPFUL_REQUIRE_VERIFIED_EMAIL", "0") == "1"  # off by default
 HELPFUL_MIN_ACCOUNT_AGE_DAYS = int(env("HELPFUL_MIN_ACCOUNT_AGE_DAYS", "0"))  # off by default
+
+# ---- Follows (follows app): private follows and a Following feed; never any follower/following counts ----
+FOLLOW_LIMIT_PER_HOUR = int(env("FOLLOW_LIMIT_PER_HOUR", "60"))  # follow/unfollow actions per account, and separately per IP address
+FOLLOW_MAX_PER_ACCOUNT = int(env("FOLLOW_MAX_PER_ACCOUNT", "500"))  # accounts one account may follow at once (abuse defence)
 
 # ---- Moderation: contact form and reports (moderation app) ----
 # Optional address that gets an email copy of every contact-form message (they are always stored in the admin too).

@@ -36,6 +36,7 @@
           <li><a class="chip" href="{{ link.url }}" rel="me noopener noreferrer nofollow" target="_blank"><b>{{ link.label }}</b> {{ link.handle }}</a></li>
         {% endfor %}
       </ul>
+      {% if user != owner %}<p class="follow-row">{% include "follows/_button.html" %}</p>{% endif %}
       {% if user == owner %}
         <p class="owner-links"><a class="btn small" href="{% url 'settings_profile' %}">Edit profile</a> <a class="btn small ghost" href="{% url 'settings_theme' %}">Change look</a></p>
       {% endif %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Following{% endblock %}
+{% block description %}New posts from the accounts you follow.{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block head %}{% load static %}<link rel="stylesheet" href="{% static 'css/home.css' %}">{% endblock %}
+{% block content %}
+  <h1 class="page-title">Following</h1>
+  <p class="lede">New public posts from the accounts you follow, newest first. Only you can see this page.</p>
+  {% if page.object_list %}
+    {% include "posts/_list.html" %}
+  {% else %}
+    <p class="empty">{% if has_follows %}Nothing new yet. The accounts you follow haven't published anything that is listed on Discover.{% else %}You're not following anyone yet.{% endif %}</p>
+    <p><a class="btn" href="{% url 'discover' %}">Find people on Discover</a></p>
+  {% endif %}
+{% endblock %}
