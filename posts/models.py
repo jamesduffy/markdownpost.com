@@ -53,7 +53,6 @@ class Post(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["visibility", "-created_at"]),
-            models.Index(models.F("helpful_rank").desc(nulls_last=True), models.F("created_at").desc(), name="post_helpful_order_idx"),
         ]
         constraints = [models.UniqueConstraint(fields=["author", "client_id"], name="unique_author_client_id")]
 

@@ -28,10 +28,6 @@ class Migration(migrations.Migration):
             name='helpful_rank',
             field=models.FloatField(blank=True, db_index=True, editable=False, null=True),
         ),
-        migrations.AddIndex(
-            model_name='post',
-            index=models.Index(models.OrderBy(models.F('helpful_rank'), descending=True, nulls_last=True), models.OrderBy(models.F('created_at'), descending=True), name='post_helpful_order_idx'),
-        ),
         migrations.AddField(
             model_name='helpful',
             name='post',
