@@ -66,9 +66,7 @@
           </div>
           <p class="dock-label" id="dock-g-account">Settings</p>
           <div role="group" aria-labelledby="dock-g-account">
-            <a href="{% url 'settings_theme' %}"><svg aria-hidden="true"><use href="#i-brush"/></svg>Customize</a>
             <a href="{% url 'settings_profile' %}"><svg aria-hidden="true"><use href="#i-gear"/></svg>Settings</a>
-            <a href="{% url 'settings_agents' %}"><svg aria-hidden="true"><use href="#i-bot"/></svg>Agents</a>
             <button type="button" data-theme-toggle aria-label="Color theme: match system" title="Color theme"></button>
             <button type="button" data-plain-toggle hidden aria-pressed="false"><svg aria-hidden="true"><use href="#i-eye"/></svg><span>Plain view</span></button>
             <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit"><svg aria-hidden="true"><use href="#i-out"/></svg>Sign out</button></form>

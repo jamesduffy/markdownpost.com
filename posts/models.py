@@ -11,6 +11,18 @@ def new_post_id():
     return secrets.token_urlsafe(6)
 
 
+class PostQuerySet(models.QuerySet):
+    def public(self):
+        """Published, public posts: what any visitor may open from a list."""
+        return self.filter(visibility=Post.Visibility.PUBLIC, is_draft=False)
+
+    def discoverable(self):
+        """public() posts whose author passes the spam gate (see posts/discovery.py): Discover, search, feeds, sitemap."""
+        from . import discovery
+
+        return self.public().filter(discovery.author_q())
+
+
 class Post(models.Model):
     class Visibility(models.TextChoices):
         PRIVATE = "private", "Private"
@@ -29,12 +41,20 @@ class Post(models.Model):
     search_text = models.TextField(blank=True, default="", editable=False)
     # Client-generated key that makes "create" safe to retry (see api_create).
     client_id = models.CharField(max_length=64, null=True, blank=True, editable=False)
+    # Ranking key for the "Helpful" sort (see posts/ranking.py): log of the time-decayed sum of votes, NULL = no votes.
+    # Not a count. Never show it to anyone or put it in any output.
+    helpful_rank = models.FloatField(null=True, blank=True, db_index=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = PostQuerySet.as_manager()
+
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["visibility", "-created_at"])]
+        indexes = [
+            models.Index(fields=["visibility", "-created_at"]),
+            models.Index(models.F("helpful_rank").desc(nulls_last=True), models.F("created_at").desc(), name="post_helpful_order_idx"),
+        ]
         constraints = [models.UniqueConstraint(fields=["author", "client_id"], name="unique_author_client_id")]
 
     def __str__(self):
@@ -86,3 +106,31 @@ def delete_body_from_storage(sender, instance, **kwargs):
         storage.get_storage().delete(instance.body_key)
     except storage.StorageError:
         pass
+
+
+class Helpful(models.Model):
+    """One account's private "this was helpful" mark on a post: who and when, nothing else. Used only to rank posts;
+    the number of marks is never shown to users, authors or agents (only the admin can list them)."""
+
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="helpful_marks")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="helpful_marks")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "helpful mark"
+        constraints = [models.UniqueConstraint(fields=["post", "user"], name="unique_helpful_per_user_post")]
+        indexes = [models.Index(fields=["post", "created_at"])]
+
+    def __str__(self):
+        return f"{self.user_id} -> {self.post_id}"
+
+
+@receiver(post_delete, sender=Helpful)
+def rerank_after_unmark(sender, instance, origin=None, **kwargs):
+    """A removed vote (undo, deleted account, admin) can't be subtracted from the log-sum, so re-sum the post's votes.
+    Skipped when the post itself is going away (deleting a post must not cost one query per vote)."""
+    if getattr(origin, "model", type(origin)) is Post:
+        return
+    from . import helpful
+
+    helpful.recompute(instance.post_id)

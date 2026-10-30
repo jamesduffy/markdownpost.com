@@ -17,33 +17,35 @@
       {% include "helpdocs/_nav.html" %}
     </aside>
 
-    <details class="help-menu">
-      <summary>All help pages</summary>
-      {% include "helpdocs/_nav.html" with nav_label="Help pages (menu)" %}
-    </details>
-
     <article class="help-main" id="help-article">
       <p class="help-crumb"><a href="{% url 'help_index' %}">Help</a> <span aria-hidden="true">/</span> {{ page.group }}</p>
-      <h1 class="help-title">{{ page.title }}</h1>
+      <div class="help-head">
+        <h1 class="help-title">{{ page.title }}</h1>
+        <div class="help-actions" role="group" aria-label="Page actions">
+          <button type="button" class="help-btn primary" data-copy-source="#help-md" data-copy-done="Copied page as markdown" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+            <span data-copy-label>Copy page as markdown</span>
+          </button>
+          <a class="help-btn" href="{% url 'help_page_md' page.slug %}">View raw</a>
+        </div>
+      </div>
+      <p class="help-status" role="status" aria-live="polite" data-copy-status></p>
       <p class="help-summary">{{ page.summary }}</p>
 
-      <div class="help-actions" role="group" aria-label="Page actions">
-        <button type="button" class="help-btn primary" data-copy-source="#help-md" data-copy-done="Copied page as markdown" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
-          <span data-copy-label>Copy page as markdown</span>
-        </button>
-        <a class="help-btn" href="{% url 'help_page_md' page.slug %}">View raw</a>
-        <span class="help-status" role="status" aria-live="polite" data-copy-status></span>
-      </div>
-
-      {% if toc %}
-        <details class="help-toc-m">
-          <summary>On this page</summary>
-          <nav aria-label="On this page (menu)">
-            {% for item in toc %}<a class="lvl-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>{% endfor %}
-          </nav>
+      <div class="help-disclosures">
+        <details class="help-menu">
+          <summary>All help pages</summary>
+          {% include "helpdocs/_nav.html" with nav_label="Help pages (menu)" %}
         </details>
-      {% endif %}
+        {% if toc %}
+          <details class="help-toc-m">
+            <summary>On this page</summary>
+            <nav aria-label="On this page (menu)">
+              {% for item in toc %}<a class="lvl-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>{% endfor %}
+            </nav>
+          </details>
+        {% endif %}
+      </div>
 
       <div class="prose" id="prose">{{ doc.html|safe }}</div>
 

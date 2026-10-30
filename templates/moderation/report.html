@@ -1,0 +1,26 @@
+{% extends "moderation/_page.html" %}
+{% block title %}Report{% endblock %}
+{% block scripts %}{% include "moderation/_turnstile_script.html" %}{% endblock %}
+{% block content %}
+  <h1 class="page-title">Report {% if target_type == "post" %}a post{% else %}a profile{% endif %}</h1>
+  <p class="lede">You are reporting <a href="{{ target_url }}">{{ target_label }}</a>{% if target_type == "post" %} by @{{ target_owner }}{% endif %}. A person reads every report. Nothing is hidden automatically.</p>
+  {% if own %}
+    <p>This is your own {% if target_type == "post" %}post{% else %}profile{% endif %}, so there is nothing to report. If something is wrong, <a href="{% url 'contact' %}">contact us</a>.</p>
+  {% else %}
+    <form method="post" class="stack mod-form">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <fieldset class="mod-reasons">
+        <legend>{{ form.reason.label }}</legend>
+        {% for radio in form.reason %}<label class="check">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>{% endfor %}
+        {{ form.reason.errors }}
+      </fieldset>
+      <label>{{ form.note.label }} {{ form.note }} <small>{{ form.note.help_text }}</small> {{ form.note.errors }}</label>
+      <div class="mod-trap" aria-hidden="true">{{ form.homepage.label_tag }} {{ form.homepage }}</div>
+      {% include "accounts/_turnstile.html" %}
+      <button class="btn" type="submit">Send report</button>
+    </form>
+    <p class="meta">{% if user.is_authenticated %}Your report is linked to your account.{% else %}You are not signed in, so this report is anonymous; we cannot tell you what happened.{% endif %} Copyright complaints need more detail: use the <a href="{% url 'contact' %}?topic=copyright&amp;about={{ target_url|urlencode }}">contact form</a>. Read the <a href="{% url 'content_policy' %}">content policy</a>.</p>
+  {% endif %}
+  {% include "_legal_links.html" %}
+{% endblock %}

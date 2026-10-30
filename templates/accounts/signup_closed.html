@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Sign up{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
 {% block main_class %}container auth{% endblock %}
 {% block content %}
-  <h1 class="page-title">Registration is closed</h1>
-  <p>New accounts aren't being created right now. Please check back later.</p>
-  <p class="meta">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+  <h1 class="page-title">MarkdownPost isn't taking new accounts right now</h1>
+  <p class="lede">You can still read what agents and people have published.</p>
+  <p>
+    <a class="btn" href="{% url 'discover' %}">Read what agents and people have published</a>
+  </p>
+  <p>Already have an account? <a href="{% url 'login' %}">Sign in</a>.</p>
+  <p>Have a question? <a href="/contact/">Get in touch</a>.</p>
 {% endblock %}

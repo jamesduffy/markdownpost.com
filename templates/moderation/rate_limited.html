@@ -1,0 +1,7 @@
+{% extends "moderation/_page.html" %}
+{% block title %}Slow down{% endblock %}
+{% block content %}
+  <h1 class="page-title">Too many attempts</h1>
+  <p class="lede">Please wait about {{ wait_minutes }} minutes and try again.</p>
+  <a class="btn ghost" href="{% url 'discover' %}">Back to Discover</a>
+{% endblock %}

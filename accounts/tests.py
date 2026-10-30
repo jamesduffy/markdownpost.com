@@ -186,7 +186,8 @@ class ProfileTests(TestCase):
         self.client.post("/settings/delete/", {"password": "wrong", "confirm": "pat"})
         self.client.post("/settings/delete/", {"password": "right-pass-123", "confirm": "nope"})
         self.assertTrue(get_user_model().objects.filter(username="pat").exists())
-        self.client.post("/settings/delete/", {"password": "right-pass-123", "confirm": "pat"})
+        res = self.client.post("/settings/delete/", {"password": "right-pass-123", "confirm": "pat"}, follow=True)
+        self.assertContains(res, "Your account has been deleted.")
         self.assertFalse(get_user_model().objects.filter(username="pat").exists())
         self.assertFalse(Post.objects.filter(pk=post.pk).exists())
         with self.assertRaises(storage.NotFound):
@@ -251,8 +252,8 @@ class RegistrationFlagTests(TestCase):
 
     def test_closed_blocks_signup_page_and_post(self):
         self.close()
-        self.assertEqual(self.client.get("/signup/").status_code, 403)
-        self.assertEqual(self.client.post("/signup/", self.data).status_code, 403)
+        self.assertEqual(self.client.get("/signup/").status_code, 200)
+        self.assertEqual(self.client.post("/signup/", self.data).status_code, 200)
         self.assertFalse(get_user_model().objects.filter(username="dave").exists())
 
     def test_closed_hides_signup_links_but_login_still_works(self):
@@ -268,3 +269,137 @@ class RegistrationFlagTests(TestCase):
         self.client.force_login(admin)
         res = self.client.get("/admin/accounts/sitesettings/", follow=True)
         self.assertContains(res, "New registrations open")
+
+
+PW = "a-long-pass-123"
+
+
+class SignupEmailTests(TestCase):
+    def post(self, **extra):
+        return self.client.post("/signup/", {"username": "ivy", "password1": PW, "password2": PW, **extra})
+
+    def test_page_explains_email_address_and_recovery(self):
+        page = self.client.get("/signup/")
+        self.assertContains(page, "Email (optional, lets you reset a forgotten password)")
+        self.assertContains(page, "Without a confirmed email we can't reset your password.")
+        self.assertContains(page, "testserver/@yourname/")
+        self.assertContains(page, "dots, dashes and underscores")
+
+    def test_signup_without_email_still_works_and_sends_nothing(self):
+        from django.core import mail
+
+        self.assertRedirects(self.post(), "/welcome/", fetch_redirect_response=False)
+        user = get_user_model().objects.get(username="ivy")
+        self.assertEqual((user.email, user.email_verified, len(mail.outbox)), ("", False, 0))
+
+    def test_signup_with_email_sends_a_confirmation_link(self):
+        from django.core import mail
+
+        self.assertRedirects(self.post(email=" Ivy@Example.com "), "/welcome/", fetch_redirect_response=False)
+        user = get_user_model().objects.get(username="ivy")
+        self.assertEqual((user.email, user.email_verified), ("Ivy@example.com", False))
+        self.assertEqual([m.to for m in mail.outbox], [["Ivy@example.com"]])
+        self.assertContains(self.client.get("/welcome/"), "We sent a confirmation link to Ivy@example.com")
+
+    def test_mail_failure_does_not_block_signup(self):
+        from unittest import mock
+
+        with mock.patch("accounts.emailverify.send_mail", side_effect=OSError("smtp down")):
+            res = self.post(email="ivy@example.com")
+        self.assertRedirects(res, "/welcome/", fetch_redirect_response=False)
+        self.assertTrue(get_user_model().objects.filter(username="ivy").exists())
+        self.assertContains(self.client.get("/welcome/"), "send the confirmation email")
+
+    def test_invalid_and_already_verified_emails_are_refused(self):
+        get_user_model().objects.create_user("owner", email="taken@example.com", password=PW, email_verified=True)
+        self.assertContains(self.post(email="not-an-email"), "Enter a valid email address")
+        self.assertContains(self.post(email="TAKEN@example.com"), "already verified on another account")
+        self.assertFalse(get_user_model().objects.filter(username="ivy").exists())
+
+    def test_unverified_claim_does_not_block(self):
+        get_user_model().objects.create_user("other", email="shared@example.com", password=PW)
+        self.assertEqual(self.post(email="shared@example.com").status_code, 302)
+
+    def test_signup_with_email_is_still_rate_limited(self):
+        for i in range(5):
+            self.client.post("/signup/", {"username": f"s{i}", "email": f"s{i}@example.com", "password1": PW, "password2": PW}, REMOTE_ADDR="10.9.9.9")
+            self.client.logout()
+        res = self.client.post("/signup/", {"username": "s9", "email": "s9@example.com", "password1": PW, "password2": PW}, REMOTE_ADDR="10.9.9.9")
+        self.assertEqual(res.status_code, 429)
+        self.assertContains(res, "Back to Discover", status_code=429)
+        self.assertNotContains(res, "Back to sign in", status_code=429)  # only login/reset limits offer it
+
+
+class OnboardingEmailTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("jo", password=PW)
+        self.client.force_login(self.user)
+
+    def test_step_one_offers_optional_email_only_when_none_is_set(self):
+        self.assertContains(self.client.get("/welcome/"), 'name="email"')
+        self.user.email = "jo@example.com"
+        self.user.save()
+        self.assertNotContains(self.client.get("/welcome/"), 'name="email"')
+
+    def test_step_one_saves_email_and_sends_link(self):
+        from django.core import mail
+
+        res = self.client.post("/welcome/", {"full_name": "", "site_title": "", "tagline": "", "bio": "", "email": "jo@example.com"})
+        self.assertRedirects(res, "/welcome/look/", fetch_redirect_response=False)
+        self.user.refresh_from_db()
+        self.assertEqual((self.user.email, self.user.email_verified), ("jo@example.com", False))
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_step_one_without_email_is_fine(self):
+        res = self.client.post("/welcome/", {"full_name": "Jo", "site_title": "", "tagline": "", "bio": ""})
+        self.assertRedirects(res, "/welcome/look/", fetch_redirect_response=False)
+
+
+class SettingsAreaTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("kit", password=PW)
+        self.client.force_login(self.user)
+
+    def test_same_tab_bar_on_every_settings_page(self):
+        for url, tab in (("/settings/", "Profile"), ("/settings/theme/", "Look"), ("/settings/account/", "Account"), ("/settings/agents/", "Agents"), ("/settings/password/", "Account")):
+            with self.subTest(url=url):
+                page = self.client.get(url)
+                self.assertContains(page, 'aria-label="Settings sections"')
+                for label in ("Profile", "Look", "Account", "Agents"):
+                    self.assertContains(page, f">{label}</a>")
+                self.assertContains(page, f'aria-current="page">{tab}</a>', count=1)
+
+    def test_site_text_lives_on_profile_tab_only(self):
+        profile, theme = self.client.get("/settings/"), self.client.get("/settings/theme/")
+        for name in ("site_title", "tagline", "about_md"):
+            self.assertContains(profile, f'name="{name}"')
+            self.assertNotContains(theme, f'name="{name}"')
+
+    def test_profile_saves_site_text_with_validation(self):
+        base = {"full_name": "", "location": "", "bio": "", "website": "", "github": "", "linkedin": "", "bluesky": "", "mastodon": "", "threads": ""}
+        res = self.client.post("/settings/", {**base, "site_title": "Kit's notes", "tagline": "small", "about_md": "# Hi\n\nthere", "show_related_posts": "on"})
+        self.assertRedirects(res, "/settings/", fetch_redirect_response=False)
+        self.user.refresh_from_db()
+        self.assertEqual((self.user.site_title, self.user.tagline, self.user.about_md), ("Kit's notes", "small", "# Hi\n\nthere"))
+        bad = self.client.post("/settings/", {**base, "site_title": "x" * 81})
+        self.assertEqual(bad.status_code, 200)
+        hidden = self.client.post("/settings/", {**base, "tagline": "a‮b"})
+        self.assertContains(hidden, "hidden or control characters")
+
+    def test_account_reminder_until_email_confirmed(self):
+        page = self.client.get("/settings/account/")
+        self.assertContains(page, "Without a confirmed email we can't reset your password.")
+        self.user.email = "kit@example.com"
+        self.user.save()
+        self.assertContains(self.client.get("/settings/account/"), "Confirm your email.")
+        self.user.email_verified = True
+        self.user.save()
+        self.assertNotContains(self.client.get("/settings/account/"), 'class="notice"')
+
+    def test_rate_limited_page_links_back_to_sign_in(self):
+        for _ in range(5):
+            self.client.post("/password-reset/", {"email": "x@example.com"}, REMOTE_ADDR="10.7.7.7")
+        res = self.client.post("/password-reset/", {"email": "x@example.com"}, REMOTE_ADDR="10.7.7.7")
+        if res.status_code == 429:
+            self.assertContains(res, 'href="/login/">Back to sign in', status_code=429)
+            self.assertContains(res, "Back to Discover", status_code=429)

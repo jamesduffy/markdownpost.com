@@ -29,6 +29,9 @@ You can write by hand in the editor, or you can let an AI agent write for you (o
 | Agent endpoint (MCP) | `{{mcp_url}}` |
 | This help | `{{help_url}}` |
 
+> [!NOTE]
+> New accounts can be switched off by the site owner. When they are, the front page says so, and you can still read everything public and sign in to an account you already have.
+
 ## Where to read next
 
 New here? Start with [Getting started]({{origin}}/help/getting-started/). Stuck? Try [Troubleshooting and FAQ]({{origin}}/help/troubleshooting/). Running your own copy of the site? See [For site owners and admins]({{origin}}/help/site-owners/).

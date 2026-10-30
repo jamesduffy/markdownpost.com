@@ -6,6 +6,15 @@
   font: 400 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 .dock, .dock * { box-sizing: border-box; }
+
+/* Clearance for the button. It is 44px tall, about 104px wide and sits at the top right, 12px in, so content must start below
+   --dock-clearance wherever it has chrome on the right (sticky columns, page tops on narrow screens). Other stylesheets read it
+   with the variable function; this file stays variable-free so a user theme can never reach the button. */
+:root { --dock-clearance: calc(max(12px, env(safe-area-inset-top)) + 56px); }
+/* Keyboard focus and #anchors scroll to below the button instead of under it (WCAG 2.2 2.4.11 Focus Not Obscured). */
+html { scroll-padding-top: calc(max(12px, env(safe-area-inset-top)) + 64px); }
+/* Until the page is wide enough for its centred column to sit left of the button, start the content below it. */
+@media (max-width: 1120px) { .container { padding-top: calc(max(12px, env(safe-area-inset-top)) + 56px); } }
 .dock-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .dock-details { position: relative; }
 

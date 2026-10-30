@@ -1,0 +1,26 @@
+/* Settings pages, sign-up and the small account pages. Uses the app's tokens (app.css) so light and dark both work. */
+
+/* One tab bar on every settings page; scrolls sideways rather than wrapping on a narrow phone. */
+.tabs { overflow-x: auto; scrollbar-width: none; }
+.tabs a { white-space: nowrap; }
+
+/* A gentle reminder that goes away by itself once the thing it asks for is done. */
+.notice { margin: 0 0 8px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius: 12px; background: color-mix(in srgb, var(--accent) 8%, var(--bg)); font-size: var(--scale-1); }
+
+/* Sign-up: readable hints, and room inside the fields so a password manager's icon never covers the text. */
+.auth .stack small { color: var(--muted); font-size: var(--scale-1); line-height: 1.45; }
+.auth .stack input[type=text], .auth .stack input[type=email], .auth .stack input[type=password] { padding-right: 48px; }
+.auth .stack ul { margin: 0; padding-left: 18px; }
+.site-addr { overflow-wrap: anywhere; color: var(--fg); }
+
+/* Copy buttons (behaviour and the aria-live announcement live in static/js/agents.js). */
+.copy-row { display: flex; gap: 8px; align-items: stretch; }
+.copy-row input { flex: 1; min-width: 0; font-family: var(--mono); font-size: var(--scale-1); }
+.copy-row .btn { flex: none; }
+
+.radio-card { display: grid !important; grid-template-columns: auto 1fr; gap: 2px 10px !important; align-items: start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; font-weight: 600; }
+.radio-card input { margin-top: 3px; }
+.radio-card small, .radio-card .hint { grid-column: 2; }
+.radio-card:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
+fieldset.choice { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
+fieldset.choice legend { padding: 0; margin-bottom: 8px; font-weight: 600; font-size: var(--scale-1); }

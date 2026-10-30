@@ -2,7 +2,7 @@
 {% block title %}Drafts{% endblock %}
 {% block content %}
   <h1 class="page-title">Drafts</h1>
-  <p class="lede">Posts you've started but haven't saved yet. Only you can see them.</p>
+  <p class="lede">Posts you've started but haven't published yet. Only you can see them. Your writing is autosaved here; press <strong>Publish</strong> in the editor when a post is ready.</p>
   <p><a class="btn" href="{% url 'new_post' %}">New post</a></p>
   {% for post in page %}
     <article class="card">
@@ -15,7 +15,7 @@
       </p>
     </article>
   {% empty %}
-    <p class="empty">No drafts. Anything you start writing shows up here until you save it.</p>
+    <p class="empty">No drafts. Anything you start writing shows up here until you publish it.</p>
   {% endfor %}
   {% if page.has_other_pages %}
     <nav class="pager" aria-label="Pagination">

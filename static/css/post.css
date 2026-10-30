@@ -117,6 +117,13 @@ html[data-read-font="sans"] { --read-font: var(--font); }
 }
 .menu-pop > a:hover, .menu-pop form > button:hover, .menu-pop button.danger:hover { background: var(--surface); text-decoration: none; }
 .menu-pop button.danger { color: var(--danger); }
+/* More actions: the destructive item sits apart from the harmless ones, in the danger colour, with room to miss it. */
+.menu-pop .menu-sep { border: 0; border-top: 1px solid var(--border); margin: 14px 6px 8px; }
+.menu-pop button.danger-item { font-weight: 600; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border)); }
+.menu-pop button.danger-item:hover, .menu-pop button.danger-item:focus-visible { background: color-mix(in srgb, var(--danger) 14%, var(--bg)); }
+.menu-pop > a, .menu-pop form > button { min-height: 44px; display: flex; align-items: center; }
+.menu-pop form + form { margin-top: 4px; }
+.menu-pop button:focus-visible, .menu-pop a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .seg { display: flex; background: var(--surface); border-radius: 10px; padding: 3px; gap: 2px; }
 .seg button { flex: 1; min-width: 44px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--read-soft); font: 600 var(--scale-1) var(--font); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 1px 3px rgb(0 0 0 / .18); }
@@ -184,6 +191,19 @@ html[data-read-font="sans"] { --read-font: var(--font); }
 /* footer */
 .post-foot { margin-top: 72px; }
 .end-mark { text-align: center; color: var(--muted); letter-spacing: .8em; margin-bottom: 40px; }
+/* "This was helpful": quiet, borrows the page's own text/background colours so any theme stays readable */
+.helpful { display: flex; justify-content: center; margin: 0 0 36px; scroll-margin-top: 24px; }
+.helpful-form { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 0; }
+.helpful-btn, .helpful-undo { font: 600 var(--scale-1) var(--font); cursor: pointer; }
+.helpful-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 1px solid var(--fg); border-radius: 999px; background: transparent; color: var(--fg); transition: background-color .15s, color .15s; }
+.helpful-btn:hover { background: var(--fg); color: var(--bg); }
+.helpful svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.helpful-state { display: inline-flex; align-items: center; gap: 8px; color: var(--fg); font: 600 var(--scale-1) var(--font); }
+.helpful-undo { min-height: 44px; padding: 0 6px; border: 0; background: none; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.helpful-undo:hover { color: var(--fg); }
+.helpful-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); font: var(--scale-1) var(--font); text-decoration: underline; text-underline-offset: 3px; }
+.helpful-link:hover { color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .helpful-btn { transition: none; } }
 .byline.big { padding: 20px 0; border-block: 1px solid var(--read-rule); width: 100%; }
 .byline.big .avatar { width: 52px; height: 52px; font-size: var(--scale1); }
 .byline.big strong { font-size: var(--scale1); }
@@ -228,7 +248,7 @@ html[data-read-font="sans"] { --read-font: var(--font); }
 @media (max-width: 760px) { .reader { padding-inline: 12px; } }
 
 @media print {
-  .dock, .author-rail, .draft-banner, .actions, .toc, .read-progress, .post-foot .more-title, .more-list, .toast, .copy-btn { display: none !important; }
+  .dock, .author-rail, .draft-banner, .actions, .toc, .read-progress, .post-foot .more-title, .more-list, .helpful, .toast, .copy-btn { display: none !important; }
   body, .themed { background: #fff !important; color: #000 !important; }
   .themed :is(h1, h2, h3, h4, h5, h6, p, li, a, .post-title, .byline-name, .byline-meta, .site-link, blockquote) { color: #000 !important; }
   .reader { display: block; padding: 0; }

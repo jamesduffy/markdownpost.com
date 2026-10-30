@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{% if post %}{{ post.display_title }}{% else %}New post{% endif %}{% endblock %}
-{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block meta %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{% static 'css/editor-ux.css' %}">{% endblock %}
 {% block header %}
   <header class="editor-bar">
-    <a class="icon-btn" href="{% if post and not post.is_draft %}{{ post.get_absolute_url }}{% else %}{% url 'discover' %}{% endif %}" aria-label="Back">←</a>
-    <span id="status" class="status" role="status">{% if not post or post.is_draft %}Draft{% endif %}</span>
+    {% if post and not post.is_draft %}<a id="back" class="icon-btn" href="{{ post.get_absolute_url }}" aria-label="Back to the post">←</a>{% else %}<a id="back" class="icon-btn" href="{% url 'drafts' %}" aria-label="Back to your drafts">←</a>{% endif %}
+    <span id="status" class="status" role="status">{% if not post or post.is_draft %}Draft{% else %}Published{% endif %}</span>
+    <a class="bar-link bar-site" href="{% url 'profile' user.username %}">My site</a>
+    <a class="icon-btn bar-help" href="{% url 'help_page' 'writing' %}" aria-label="Help: writing and publishing" title="Help" target="_blank" rel="noopener">?</a>
     <details class="drafts-menu" id="drafts-menu">
       <summary class="btn ghost small" aria-label="Your drafts">Drafts{% if draft_count %} <b>{{ draft_count }}</b>{% endif %}</summary>
       <div class="drafts-pop">
@@ -17,14 +19,15 @@
           <p class="drafts-empty">No other drafts.</p>
         {% endfor %}
         <a class="drafts-all" href="{% url 'drafts' %}">All drafts{% if draft_count > 8 %} ({{ draft_count }}){% endif %}</a>
+        <a class="drafts-site" href="{% url 'profile' user.username %}">My site</a>
       </div>
     </details>
-    <select id="visibility" aria-label="Who can see this post once it's saved">
-      <option value="public"{% if not post or post.visibility == 'public' %} selected{% endif %}>🌍 Public</option>
-      <option value="unlisted"{% if post.visibility == 'unlisted' %} selected{% endif %}>🔗 Unlisted</option>
-      <option value="private"{% if post.visibility == 'private' %} selected{% endif %}>🔒 Private</option>
+    <select id="visibility" aria-label="Who can see this post once it's published">
+      <option value="public"{% if not post or post.visibility == 'public' %} selected{% endif %}>Public</option>
+      <option value="unlisted"{% if post.visibility == 'unlisted' %} selected{% endif %}>Unlisted</option>
+      <option value="private"{% if post.visibility == 'private' %} selected{% endif %}>Private</option>
     </select>
-    <a id="done" class="btn" href="{% if post and not post.is_draft %}{{ post.get_absolute_url }}{% else %}{% url 'discover' %}{% endif %}">{% if not post or post.is_draft %}Save{% else %}Done{% endif %}</a>
+    <a id="done" class="btn" href="{% if post and not post.is_draft %}{{ post.get_absolute_url }}{% else %}{% url 'drafts' %}{% endif %}">{% if not post or post.is_draft %}Publish{% else %}Update{% endif %}</a>
   </header>
 {% endblock %}
 {% block main_class %}editor-page{% endblock %}

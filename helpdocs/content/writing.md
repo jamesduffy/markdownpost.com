@@ -10,7 +10,8 @@ Start a post at {{origin}}/new/, or open an existing one with **Edit** on the po
 - Press **Enter** in the title, or **Arrow Down** at its end, to jump into the body. Press **Arrow Up** on the first body line, or **Backspace** in an empty body, to go back to the title.
 - Click empty space anywhere on the page to put the cursor at the end of the text.
 - The drop-down at the top sets **who can see the post** (Public, Unlisted, Private). It applies when the post is published. Changing it saves immediately.
-- The back arrow leaves the editor without publishing. **Save** publishes a draft (see below).
+- The back arrow leaves the editor without publishing: it goes to your Drafts for a draft, and back to the post for a published one. **My site** (hidden on narrow screens, where it is in the Drafts menu instead) opens your profile, and **?** opens this help.
+- The big button on the right publishes a draft. It reads **Publish** for Public, **Publish (unlisted)** for Unlisted and **Save privately** for Private, and changes as you change the drop-down. On a post that is already published it reads **Update** (see below).
 
 ## Formatting without remembering syntax
 
@@ -20,7 +21,7 @@ On wide screens a **+** button appears in the margin beside an empty line. It op
 
 ## The slash menu
 
-Type `/` at the start of a line. A menu opens; keep typing to narrow it (`/tab` finds Table), use the arrow keys, and press Enter to choose.
+Type `/` at the start of a line. A menu opens; keep typing to narrow it (`/tab` finds Table), use the arrow keys, and press Enter to choose. Press Escape to close the menu; if you had typed only the `/`, it is removed too.
 
 | Type | Inserts |
 | --- | --- |
@@ -45,7 +46,7 @@ On a Mac use ⌘ where this page says Ctrl.
 | Ctrl+B | Bold the selection (or toggle it off) |
 | Ctrl+I | Italic |
 | Ctrl+Alt+1, 2, 3 | Turn the line into a heading 1, 2 or 3 (press again to turn it off) |
-| Ctrl+S | Save to the server now (does not publish) |
+| Ctrl+S | Sync the draft to the server now (does not publish) |
 | Ctrl+Z, Ctrl+Shift+Z | Undo, redo |
 | Tab, Shift+Tab | Indent or outdent, but only inside a list (so Tab never traps keyboard focus in ordinary text) |
 | Enter on an empty `>` line | Leaves a quote |
@@ -58,14 +59,14 @@ Other small helpers:
 
 ## Autosave and drafts
 
-You never have to press Save to keep your work.
+You never have to press Publish to keep your work: autosave keeps it as a draft.
 
 - Every change is stored **on your device** within a fraction of a second.
-- About a second after you stop typing, the text is saved to the **server**. The status next to the back arrow tells you what is happening: "Draft · editing…", "Saving…", "Draft saved" or "Saved".
+- About a second after you stop typing, the text is saved to the **server**. The status next to the back arrow tells you what is happening: "Draft · editing…", "Saving…", "Draft, autosaved" (a draft only you can see) or "Published, changes saved".
 - Ctrl+S saves right away. Switching tabs or closing the page saves too.
 - A new post is created on the server the first time there is something to save, and the address in the browser changes to `/@you/<id>/edit/`. If a connection drops during that first save, a retry reuses the same internal key, so you do not end up with two copies.
 
-**New posts are drafts, and autosave never publishes them.** A draft is visible only to you and appears in no list except your own Drafts. To publish, press **Save**: the post becomes live with the visibility you chose and you are taken to it. If the post is already published, the button says **Done**, and your edits are already live because they autosave into the published post.
+**New posts are drafts, and autosave never publishes them.** A draft is visible only to you and appears in no list except your own Drafts. To publish, press **Publish** (or **Publish (unlisted)**, or **Save privately** if the drop-down says Private): the post becomes live with the visibility you chose and a message appears at the top of the editor, for example "Published. Anyone can read it now." with **View post** and **Copy link**. If the post is already published, the button says **Update**, which takes you to the post; your edits are already live because they autosave into the published post.
 
 Your drafts are in the **Drafts** menu at the top of the editor and on the Drafts page ({{origin}}/drafts/). To take a published post back to drafts, use the **⋯** menu on the post page and choose **Move back to drafts**.
 
@@ -73,7 +74,7 @@ Your drafts are in the **Drafts** menu at the top of the editor and on the Draft
 
 If you edit the same post in two tabs or on two devices, the second to save sees a banner: "This post was changed on another device or tab since you opened it." Choose **Keep my version** or **Use the other version**. Nothing is overwritten silently.
 
-If the post is deleted while you have it open, the editor keeps your text and offers **Save as a new draft** or **Discard**.
+If the post is deleted while you have it open, the editor keeps your text and offers **Keep as a new draft** or **Discard**.
 
 ## Images
 
@@ -83,11 +84,11 @@ Paste an image from the clipboard, drop a file onto the page, press the image bu
 
 The editor keeps working without a connection.
 
-- Your text is stored on the device as you type. The status reads "Offline · saved on this device".
+- Your text is stored on the device as you type. The status reads "Offline · kept on this device".
 - When the connection returns, the post syncs by itself.
 - The editor opens offline once you have used it online on that device. A post you opened while online can be reopened offline, and you can start a new one.
 - Drafts that exist only on your device show up in the Drafts menu and, when the network is down, on the "You're offline" page.
-- If you are signed out when the connection returns, the status says "Signed out · saved on this device. Log in again to sync." Sign in as the same account and it finishes saving.
+- If you are signed out when the connection returns, the status says "Signed out · kept on this device. Log in again to sync." Sign in as the same account and it finishes saving.
 - Logging out asks for confirmation if drafts on this device have not synced, because logging out clears the device's copies.
 
 Details of installing the site and what else works offline: [Installing the app and working offline]({{origin}}/help/install-offline/).

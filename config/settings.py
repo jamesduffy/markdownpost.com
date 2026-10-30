@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -58,6 +59,8 @@ INSTALLED_APPS = [
     "uploads",
     "agents",
     "helpdocs",
+    "moderation",
+    "django.contrib.sitemaps",
 ]
 
 MIDDLEWARE = [
@@ -284,3 +287,29 @@ MCP_REQUESTS_PER_MINUTE = int(os.environ.get("MCP_REQUESTS_PER_MINUTE", 120))  #
 MCP_POSTS_PER_HOUR = int(os.environ.get("MCP_POSTS_PER_HOUR", 20))  # new posts per account, so an agent can't flood Discover
 MCP_UPDATES_PER_HOUR = int(os.environ.get("MCP_UPDATES_PER_HOUR", 200))  # post edits per account
 MCP_MAX_BODY_BYTES = 9 * 1024 * 1024  # a 5 MB image is ~6.7 MB as base64
+
+# ---- "Mark as helpful" (private votes that feed the Helpful sort; counts are never shown) ----
+HELPFUL_HALF_LIFE_DAYS = float(env("HELPFUL_HALF_LIFE_DAYS", "14"))  # a vote counts half as much after this many days; run `manage.py rank_posts` after changing it
+HELPFUL_LIMIT_PER_HOUR = int(env("HELPFUL_LIMIT_PER_HOUR", "60"))  # mark/undo actions per account, and separately per IP address
+HELPFUL_REQUIRE_VERIFIED_EMAIL = env("HELPFUL_REQUIRE_VERIFIED_EMAIL", "0") == "1"  # off by default
+HELPFUL_MIN_ACCOUNT_AGE_DAYS = int(env("HELPFUL_MIN_ACCOUNT_AGE_DAYS", "0"))  # off by default
+
+# ---- Moderation: contact form and reports (moderation app) ----
+# Optional address that gets an email copy of every contact-form message (they are always stored in the admin too).
+# Empty (the default) = no email. Never shown on any page. Uses the EMAIL_* settings above.
+CONTACT_EMAIL = env("CONTACT_EMAIL")
+CONTACT_LIMIT = int(env("CONTACT_LIMIT", "3"))  # contact-form submissions per IP per window
+CONTACT_LIMIT_WINDOW = int(env("CONTACT_LIMIT_WINDOW", "3600"))
+REPORT_LIMIT = int(env("REPORT_LIMIT", "10"))  # reports per IP (and, when signed in, per account) per window
+REPORT_LIMIT_WINDOW = int(env("REPORT_LIMIT_WINDOW", "3600"))
+
+# ---- Discoverability gate (spam control for Discover, search, feeds and the sitemap; see posts/discovery.py) ----
+# A post is listed there only if its author is staff, has a confirmed email, or the account is at least this many days old.
+# 0 switches the age rule off. DISCOVERABLE_REQUIRE_VERIFIED_EMAIL=1 drops the age alternative (staff or confirmed email only).
+# Posts of other authors stay readable at their own address and on the author's profile, but carry noindex.
+# `manage.py test` defaults the age to 0 so the many tests that create a brand-new user and expect their post on Discover keep
+# working; the gate has its own tests, and an explicit DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS in the environment still wins.
+DISCOVERABLE_DEFAULT_AGE_DAYS = 2
+_TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS = int(env("DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS") or (0 if _TESTING else DISCOVERABLE_DEFAULT_AGE_DAYS))
+DISCOVERABLE_REQUIRE_VERIFIED_EMAIL = env("DISCOVERABLE_REQUIRE_VERIFIED_EMAIL", "0") == "1"

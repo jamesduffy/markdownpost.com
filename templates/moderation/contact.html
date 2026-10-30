@@ -1,0 +1,22 @@
+{% extends "moderation/_page.html" %}
+{% block title %}Contact{% endblock %}
+{% block description %}Send a message to the people who run MarkdownPost.{% endblock %}
+{% block scripts %}{% include "moderation/_turnstile_script.html" %}{% endblock %}
+{% block content %}
+  <h1 class="page-title">Contact us</h1>
+  <p class="lede">This form is the way to reach the person who runs MarkdownPost. Use it for questions, problems, account help and copyright notices. To report a specific post or profile, use the <strong>Report</strong> link on that page instead.</p>
+  <form method="post" class="stack mod-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if about %}<p class="mod-about">About this page on MarkdownPost: <code>{{ about }}</code></p><input type="hidden" name="about" value="{{ about }}">{% endif %}
+    <label>{{ form.topic.label }} {{ form.topic }} {{ form.topic.errors }}</label>
+    <label>{{ form.name.label }} {{ form.name }} {{ form.name.errors }}</label>
+    <label>{{ form.email.label }} {{ form.email }} <small>{{ form.email.help_text }}</small> {{ form.email.errors }}</label>
+    <label>{{ form.message.label }} {{ form.message }} <small>{{ form.message.help_text }}</small> {{ form.message.errors }}</label>
+    <div class="mod-trap" aria-hidden="true">{{ form.homepage.label_tag }} {{ form.homepage }}</div>
+    {% include "accounts/_turnstile.html" %}
+    <button class="btn" type="submit">Send message</button>
+  </form>
+  <p class="meta">Copyright complaint? Choose the topic <strong>Copyright</strong> and read <a href="{% url 'content_policy' %}#copyright">what to include</a>. We keep what you send in our admin and read it ourselves; see the <a href="{% url 'privacy' %}">privacy page</a>.</p>
+  {% include "_legal_links.html" %}
+{% endblock %}

@@ -3,7 +3,9 @@
 {% block theme_head %}{% theme_head %}{% endblock %}
 {% block step %}
   <h1 class="page-title">Choose a look</h1>
-  <p class="lede">Pick a starting point for your profile and posts. Each one shows how your site would look. You can change everything later in <a href="{% url 'settings_theme' %}">the full customizer</a>.</p>
+  <p class="lede">Pick a starting point for your profile and posts. Each one shows how your site would look. You can change everything later in <a href="{% url 'settings_theme' %}">Settings, Look</a>.</p>
+
+  <p class="hint look-state">{% if current %}Your current look is selected below. Pick another one, or skip to keep it.{% else %}You haven't picked a look yet, so your site uses a style derived from your username. Choose a card to replace it, or skip to keep it.{% endif %}</p>
 
   <form method="post" class="onb-form" novalidate>
     {% csrf_token %}
@@ -17,14 +19,14 @@
             <span class="look-text">Notes, drafts and <span class="look-link">links</span>.</span>
             <span class="look-dots"><i></i><i></i><i></i></span>
           </span>
-          <span class="look-name">{{ label }}</span>
+          <span class="look-name"><span class="look-check" aria-hidden="true"></span>{{ label }}<span class="sr-only">{% if current == key %} (selected){% endif %}</span></span>
         </label>
       {% endfor %}
     </div>
     <div class="onb-actions">
       <button class="btn big" type="submit">Use this look</button>
-      <a class="quiet-link" href="{% url next_url %}">Skip this step</a>
-      <a class="quiet-link" href="{% url back_url %}">Back</a>
+      <a class="btn ghost big" href="{% url next_url %}">Skip this step</a>
+      <a class="onb-link" href="{% url back_url %}">Back</a>
     </div>
   </form>
 {% endblock %}

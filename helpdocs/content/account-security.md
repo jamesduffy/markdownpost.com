@@ -6,8 +6,9 @@ Sign in at {{origin}}/login/ with your **username** and password (not your email
 
 ## Your email address
 
-Settings, Account ({{origin}}/settings/account/) has your email. It is private, never shown to anyone, and only used for confirmation and password-reset messages.
+You can give an email when you sign up, in the first setup step, or later in Settings, Account ({{origin}}/settings/account/). It is optional, private, never shown to anyone, and only used for confirmation and password-reset messages. **Without a confirmed email we can't reset your password**, so Settings, Account shows a reminder until yours is confirmed.
 
+- If you give one at sign-up, the confirmation link is sent straight away. If mail cannot be sent, sign-up still works; use **Send the confirmation link again** in Settings, Account.
 - After you save an address, we email a confirmation link that lasts 3 days. Open it and press the confirm button.
 - Changing the address un-confirms it, and links sent for the old address stop working.
 - Only one account can hold a given confirmed address.
@@ -20,7 +21,7 @@ Settings, Account ({{origin}}/settings/account/) has your email. It is private, 
 3. If your email was **confirmed**, you receive a link. It can be used once and expires after a few days.
 4. Choose a new password.
 
-Unconfirmed addresses never receive reset links. If you never confirmed your email and lose your password, the person who runs the site has to help; see [For site owners and admins]({{origin}}/help/site-owners/).
+Unconfirmed addresses never receive reset links. If you never confirmed your email and lose your password, there is no self-service way back in: ask the person who runs the site for help through the [contact form]({{origin}}/contact/), and see [For site owners and admins]({{origin}}/help/site-owners/).
 
 ## Change your password
 
@@ -35,7 +36,7 @@ Settings, Account, **Delete account**. Type your username and your password and 
 > [!WARNING]
 > This permanently deletes your profile, every post you wrote (drafts included), your uploaded images and your photo, and your agent tokens stop working. It cannot be undone, and the username may be taken by someone else afterwards.
 
-After deleting, you are signed out. Wrong answers count against a limit.
+After deleting, you are signed out and see "Your account has been deleted." Wrong answers count against a limit.
 
 ## Sessions
 

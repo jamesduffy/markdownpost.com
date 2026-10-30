@@ -4,11 +4,14 @@ Nothing is stored about progress: every step simply edits the same profile and t
 so existing users can open /welcome/ at any time and every step can be skipped with a plain link.
 """
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from . import themes
 from .forms import OnboardingSiteForm
+from .views import send_verification_mail
 
 STEPS = (
     ("onboarding_site", "Name your site"),
@@ -35,9 +38,15 @@ def _context(step_name, **extra):
 def site(request):
     form = OnboardingSiteForm(request.POST or None, request.FILES or None, instance=request.user)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        user = form.save()
+        if form.new_email:
+            if send_verification_mail(request, user):
+                messages.success(request, f"We sent a confirmation link to {user.email}. Open it to finish adding your email.")
+            else:
+                messages.warning(request, "We couldn't send the confirmation email. You can resend it in Settings, Account.")
         return redirect("onboarding_look")
-    return render(request, "accounts/onboarding/site.html", _context("onboarding_site", form=form))
+    site_url = request.build_absolute_uri(reverse("profile", args=[request.user.username]))
+    return render(request, "accounts/onboarding/site.html", _context("onboarding_site", form=form, site_url=site_url))
 
 
 @login_required
@@ -54,9 +63,10 @@ def look(request):
 
 @login_required
 def agent(request):
-    return render(request, "accounts/onboarding/agent.html", _context("onboarding_agent"))
+    return render(request, "accounts/onboarding/agent.html", _context("onboarding_agent", endpoint=request.build_absolute_uri("/mcp/")))
 
 
 @login_required
 def done(request):
-    return render(request, "accounts/onboarding/done.html", _context("onboarding_done"))
+    site_url = request.build_absolute_uri(reverse("profile", args=[request.user.username]))
+    return render(request, "accounts/onboarding/done.html", _context("onboarding_done", site_url=site_url))

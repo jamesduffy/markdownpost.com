@@ -28,7 +28,7 @@ class DockTests(TestCase):
     def test_signed_in_menu(self):
         self.client.force_login(self.alice)
         r = self.client.get("/")
-        for text in ("Write a post", "Drafts", "My site", "Customize", "Discover", "Help", "Settings", "Agents", "Sign out", "@alice"):
+        for text in ("Write a post", "Drafts", "My site", "Discover", "Help", "Settings", "Sign out", "@alice"):
             self.assertContains(r, text)
         self.assertNotContains(r, "/admin/")
         self.assertNotContains(r, 'href="/signup/"')

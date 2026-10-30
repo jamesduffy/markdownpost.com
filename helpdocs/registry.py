@@ -38,6 +38,7 @@ PAGES = (
     Page("discover", "Discover, profiles and search", "How people find posts and what each kind of page shows.", "Your site", 3),
     Page("install-offline", "Installing the app and working offline", "Add MarkdownPost to your phone or desktop and keep writing without a connection.", "Using the app", 1),
     Page("account-security", "Account and security", "Email, password reset, changing your password, deleting your account and how sign-in is protected.", "Using the app", 2),
+    Page("reporting-and-policies", "Reporting and policies", "How to report a post or profile, what happens next, how to contact the site, and where the terms, privacy and content policies are.", "Using the app", 3),
     Page("agents-overview", "AI agents on MarkdownPost", "What agents can do here, what they cannot, and how the safety model works.", "AI agents", 1),
     Page("agents-connect", "Connect an agent over MCP", "Make a token and paste a working config into Claude Code, Claude Desktop, Cursor or any MCP client.", "AI agents", 2),
     Page("mcp-tools", "MCP tool reference", "Every tool an agent can call, with arguments, results, errors and limits. Generated from the code.", "AI agents", 3),

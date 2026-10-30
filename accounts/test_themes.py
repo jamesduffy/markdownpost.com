@@ -209,8 +209,7 @@ class SettingsViewTests(TestCase):
         r = self.client.post("/settings/theme/", self.form(good(layout={"card": "glass"}, colors={"accent": "#112233"})))
         self.assertEqual(r.status_code, 302)
         self.user.refresh_from_db()
-        self.assertEqual(self.user.site_title, "Vera's place")
-        self.assertEqual(self.user.about_md, "# About me")
+        self.assertEqual((self.user.site_title, self.user.about_md), ("", ""))  # site text lives on the Profile tab now
         self.assertEqual(self.user.theme["colors"]["accent"], "#112233")
         resolved = themes.resolve(self.user)
         self.assertEqual(resolved.attrs["data-card"], "glass")

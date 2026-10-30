@@ -2,7 +2,7 @@
 {% load static profile %}
 {% block step %}
   <h1 class="page-title">Welcome, {{ user.username }}. Let's set up your site.</h1>
-  <p class="lede">Your site lives at <strong>/@{{ user.username }}/</strong>. Add a few details now, or skip and change them whenever you like in Settings.</p>
+  <p class="lede">Your site lives at <strong class="site-addr">{{ site_url }}</strong>. Add a few details now, or skip and change them whenever you like in Settings.</p>
 
   <form method="post" enctype="multipart/form-data" class="settings-form onb-form" novalidate>
     {% csrf_token %}
@@ -27,9 +27,15 @@
       <label>{{ form.bio.label }} {{ form.bio }} <small class="count" data-count-for="id_bio">0 / 300</small> {{ form.bio.errors }}</label>
     </section>
 
+    {% if form.offers_email %}
+    <section class="field-group">
+      <label>{{ form.email.label }} {{ form.email }} <small>{{ form.email.help_text }}</small> {{ form.email.errors }}</label>
+    </section>
+    {% endif %}
+
     <div class="onb-actions">
       <button class="btn big" type="submit">Save and continue</button>
-      <a class="quiet-link" href="{% url next_url %}">Skip this step</a>
+      <a class="btn ghost big" href="{% url next_url %}">Skip this step</a>
     </div>
   </form>
   <script src="{% static 'js/settings.js' %}"></script>

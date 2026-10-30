@@ -6,7 +6,8 @@ This page takes you from nothing to a published post and a site with your name o
 
 1. Open {{origin}}/signup/.
 2. Pick a **username**. It becomes part of every link to your writing (`{{origin}}/@username/`) and you cannot change it later, so choose one you will be happy with for a long time.
-3. Choose a password and type it twice, then press **Sign up**. You are signed in straight away and taken to a short setup, described in step 4. Every part of it can be skipped.
+3. Optionally add an **email address**. It is not required to write, but without a *confirmed* email we cannot reset your password if you forget it (see step 2).
+4. Choose a password and type it twice, then press **Sign up**. You are signed in straight away and taken to a short setup, described in step 4. Every part of it can be skipped.
 
 Username rules: letters and numbers (A to Z, 0 to 9), dots, dashes and underscores, starting with a letter or a number. Names that look like parts of the site (such as `admin`, `help`, `settings` or `api`) are reserved.
 
@@ -14,11 +15,13 @@ Passwords must be at least 8 characters, not entirely numbers, not a very common
 
 If sign-up shows "Registration is closed", the person running the site has switched new accounts off. Existing accounts can still sign in.
 
-## 2. Add and confirm an email address
+## 2. Confirm your email address
 
-You do not need an email address to write. You do need a **confirmed** one to reset a forgotten password, because reset links are only ever sent to confirmed addresses.
+You do not need an email address to write. You do need a **confirmed** one to reset a forgotten password, because reset links are only ever sent to confirmed addresses. **Without a confirmed email we can't reset your password.**
 
-1. Open Settings, then the **Account** tab ({{origin}}/settings/account/).
+If you typed an email when you signed up, we sent a confirmation link straight away (if the email could not be sent, your account still works and you can resend it from Settings). If you skipped it, you can add it at any time, either in the first setup step or in Settings:
+
+1. Open Settings, then the **Account** tab ({{origin}}/settings/account/). A reminder is shown there until your email is confirmed.
 2. Type your email and press **Save email**. We send a confirmation link.
 3. Open the email and follow the link. You land on a page with a **Confirm** button; press it. (The extra click is deliberate: it stops mail scanners that open links automatically from confirming an address for you.)
 
@@ -35,12 +38,14 @@ More in [Writing in the editor]({{origin}}/help/writing/) and [Publishing, draft
 
 ## 4. Set up your site
 
-Right after you sign up, {{origin}}/welcome/ walks you through four short steps: name your site (photo, name, title, tagline, bio), choose a look from ten presets, optionally bring an AI agent, and finish with a **Write your first post** button. Each step has a **Skip this step** link, and you can come back to {{origin}}/welcome/ whenever you like.
+Right after you sign up, {{origin}}/welcome/ walks you through four short steps: name your site (photo, name, title, tagline, bio, and an optional email if you did not give one), choose a look from ten presets, optionally bring an AI agent, and finish with a **Write your first post** button. Each step has a **Skip this step** link, and you can come back to {{origin}}/welcome/ whenever you like.
 
-Your site is your profile page, `{{origin}}/@yourname/`. You can also change everything later in Settings:
+Your site is your profile page, `{{origin}}/@yourname/`. You can also change everything later in **Settings**, which has four tabs:
 
-- **Profile** ({{origin}}/settings/): photo, name, location, bio and links.
-- **Theme** ({{origin}}/settings/theme/): site title, tagline, About text, and how everything looks.
+- **Profile** ({{origin}}/settings/): site title, tagline and About text, then photo, name, location, bio and links.
+- **Look** ({{origin}}/settings/theme/): how everything looks (starter themes, colors, fonts, layout).
+- **Account** ({{origin}}/settings/account/): email, password and deleting your account.
+- **Agents** ({{origin}}/settings/agents/): access tokens for AI agents.
 
 Even before you change anything, your site gets a look derived from your username, so no two sites start out identical. See [Your site and profile]({{origin}}/help/your-site/) and [Themes]({{origin}}/help/themes/).
 

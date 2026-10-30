@@ -1,0 +1,10 @@
+{% extends "admin/index.html" %}
+{% block content %}
+  <div class="mod-admin-note" role="status" style="margin:0 0 20px;padding:12px 16px;border:1px solid var(--hairline-color,#ccc);border-radius:8px;background:var(--darkened-bg,#f8f8f8)">
+    <strong>Moderation:</strong>
+    <a href="{{ mod_reports_url }}?status__exact=new">{{ mod_new_reports }} new report{{ mod_new_reports|pluralize }}</a>
+    ({{ mod_open_reports }} open) &middot;
+    <a href="{{ mod_messages_url }}?status__exact=new">{{ mod_new_messages }} new contact message{{ mod_new_messages|pluralize }}</a>
+  </div>
+  {{ block.super }}
+{% endblock %}

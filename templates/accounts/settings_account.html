@@ -1,6 +1,15 @@
 {% extends "accounts/settings_base.html" %}
 {% block title %}Account settings{% endblock %}
 {% block panel %}
+  {% if not user.email_verified %}
+    <aside class="notice" role="note">
+      {% if user.email %}
+        <strong>Confirm your email.</strong> We sent a link to {{ user.email }}. Until you open it, we can't reset your password if you forget it.
+      {% else %}
+        <strong>Add an email so you can reset a forgotten password.</strong> Without a confirmed email we can't reset your password. It's private and never shown on your profile.
+      {% endif %}
+    </aside>
+  {% endif %}
   <form method="post" class="settings-form">
     {% csrf_token %}
     <section class="field-group">

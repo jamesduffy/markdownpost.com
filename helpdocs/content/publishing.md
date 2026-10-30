@@ -2,13 +2,13 @@
 
 Two separate ideas decide who can see a post: whether it is a **draft**, and its **visibility**.
 
-## Drafts and the Save rule
+## Drafts and the Publish button
 
 Every new post starts as a **draft**. A draft is visible only to you, and it shows up in no list except your own Drafts ({{origin}}/drafts/) and the Drafts menu in the editor. Autosave keeps a draft up to date, but **autosave never publishes anything**.
 
-To publish, press **Save** in the editor. That does three things at once: it publishes the post, it applies the visibility you picked, and it takes you to the finished post. You need a title or some text first; an empty post stays a draft.
+To publish, press the big button in the editor. It reads **Publish** for Public, **Publish (unlisted)** for Unlisted and **Save privately** for Private, and changes when you change the visibility drop-down. Pressing it publishes the post at once and applies the visibility you picked; the editor then shows a message such as "Published. Anyone can read it now." with **View post** and **Copy link**. You need a title or some text first; an empty post stays a draft.
 
-Once a post is published, the button reads **Done**, and every edit you make autosaves straight into the live post. If you want to work privately on a published post again, use the **⋯** menu on the post page and choose **Move back to drafts**. That removes it from Discover and your profile until you press Save again.
+Once a post is published, the button reads **Update**, and every edit you make autosaves straight into the live post. If you want to work privately on a published post again, use the **⋯** menu on the post page and choose **Move back to drafts**. That removes it from Discover and your profile until you press Publish again.
 
 ## Visibility
 
@@ -20,10 +20,14 @@ Visibility applies to posts that are published. You choose it in the drop-down a
 | Unlisted | Anyone who has the link | No | Asked not to index (`noindex`) |
 | Private | Only you, signed in | Only to you, on your own profile | Asked not to index |
 
-A draft is always visible only to you, whatever its visibility says. The visibility you picked takes effect when you press Save.
+A draft is always visible only to you, whatever its visibility says. The visibility you picked takes effect when you press the Publish button.
 
 > [!NOTE]
 > Unlisted is "secret link", not security. Anyone you send the link to can pass it on. Do not put anything in an unlisted post that you would not want repeated.
+
+## Helpful marks
+
+Signed-in readers can press **This was helpful** on someone else's public post. It is private: you will not see a count or who marked your post, and neither will anyone else. Marks only influence the **Helpful** sort on Discover. Details are in [Discover, profiles and search]({{origin}}/help/discover/).
 
 ## Editing
 

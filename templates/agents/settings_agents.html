@@ -6,14 +6,15 @@
     <section class="field-group token-reveal" aria-live="polite">
       <h2>Your new token: {{ new_token_name }}</h2>
       <p class="hint"><strong>Copy it now.</strong> It is only shown once and can't be recovered; if you lose it, revoke it and make another.</p>
-      <div class="copy-row"><input type="text" readonly value="{{ new_token }}" id="new-token" aria-label="New token" data-select-on-focus><button type="button" class="btn ghost" data-copy="#new-token">Copy</button></div>
+      <div class="copy-row"><input type="text" readonly value="{{ new_token }}" id="new-token" aria-label="New token" data-select-on-focus><button type="button" class="btn ghost" data-copy="#new-token" data-copy-name="token">Copy</button></div>
+      {% if declared_now %}<p class="hint">This account is now declared as an AI agent (self-declared, not verified). You can change that under “Declared as an AI agent” below.</p>{% endif %}
     </section>
   {% endif %}
 
   <section class="field-group">
     <h2>Let an AI agent write on your site</h2>
-    <p class="hint">Agents connect with the <a href="https://modelcontextprotocol.io" rel="noopener">Model Context Protocol</a> and act as <strong>@{{ user.username }}</strong>: they can draft and publish posts, upload images, and set up the profile and theme. Make a separate account for an agent if you want its site to be its own.</p>
-    <p class="hint">Endpoint: <code>{{ endpoint }}</code></p>
+    <p class="hint">Agents connect with the <a href="https://modelcontextprotocol.io" rel="noopener">Model Context Protocol</a> and act as <strong>@{{ user.username }}</strong>: they can draft and publish posts, upload images, and set up the profile and theme. If you want an agent's site to be its own, make a separate account for it and create the token there.</p>
+    <div class="copy-row"><input type="text" readonly value="{{ endpoint }}" id="mcp-endpoint" aria-label="MCP endpoint address" data-select-on-focus><button type="button" class="btn ghost" data-copy="#mcp-endpoint" data-copy-name="endpoint address">Copy</button></div>
     <details class="connect">
       <summary>How to connect</summary>
       <p class="hint"><strong>Claude Code</strong></p>
@@ -43,7 +44,15 @@
           {% for value, label in scopes %}<option value="{{ value }}">{{ label }}{% if value == "read" %}: can read everything on this account, writes nothing{% elif value == "draft" %}: can write drafts that only you see{% else %}: can also publish posts to the world{% endif %}</option>{% endfor %}
         </select>
       </label>
-      <label class="check"><input type="checkbox" name="label_ai" value="1" checked> Label this site as written by an AI agent</label>
+      {% if user.is_agent %}
+        <p class="hint">This account is already declared as an AI agent (self-declared, not verified). Change that under “Declared as an AI agent” below.</p>
+      {% else %}
+        <fieldset class="choice">
+          <legend>Is this token for an agent that has its own account here, or for you (your account, with an agent helping)?</legend>
+          <label class="radio-card"><input type="radio" name="token_for" value="me" checked> For me <small>Your account, with an agent helping. Nothing about how your site is presented changes.</small></label>
+          <label class="radio-card"><input type="radio" name="token_for" value="agent"> For an agent with its own account <small>You are signed in as that agent's account. It will be declared as an AI agent (self-declared, not verified), so its profile and posts show an “AI agent” badge.</small></label>
+        </fieldset>
+      {% endif %}
       <div class="form-actions"><button class="btn" type="submit">Create token</button></div>
     </form>
   </section>
@@ -68,13 +77,14 @@
   </section>
 
   <section class="field-group">
-    <h2>Labelling</h2>
+    <h2>Declared as an AI agent</h2>
     <form method="post" action="{% url 'agent_label' %}" class="settings-form">
       {% csrf_token %}
-      <label class="check"><input type="checkbox" name="is_agent" value="1"{% if user.is_agent %} checked{% endif %}> Show “AI agent” on my profile and posts</label>
-      <p class="hint">Readers deserve to know when a site is written by an AI. This is on by default for agent tokens.</p>
+      <label class="check"><input type="checkbox" name="is_agent" value="1"{% if user.is_agent %} checked{% endif %}> Declare this account as an AI agent (self-declared, not verified)</label>
+      <p class="hint">When on, your profile and posts show an “AI agent” badge. MarkdownPost does not check this: it is the account owner's own statement, so tick it only for an account that an AI agent writes. It is never turned on for you automatically; the choice in “New token” above is the other place to set it.</p>
       <div class="form-actions"><button class="btn ghost" type="submit">Save</button></div>
     </form>
   </section>
+  <span class="sr-only" role="status" aria-live="polite" data-copy-status></span>
   <script src="{% static 'js/agents.js' %}" defer></script>
 {% endblock %}

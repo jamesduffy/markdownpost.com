@@ -88,9 +88,13 @@
     warnings(t).forEach(function (w) {
       var li = document.createElement("li"); li.className = w[0] === "error" ? "error" : ""; li.textContent = w[1]; list.appendChild(li);
     });
-    var title = el("site_title").value.trim(), tag = el("tagline").value.trim();
-    document.getElementById("pv-title").textContent = title || document.getElementById("pv-title").getAttribute("data-default") || title || "Your site";
-    document.getElementById("pv-tagline").textContent = tag || "Your tagline goes here";
+    // Site title and tagline live on the Profile tab now; the preview shows the saved values (server-rendered).
+    var titleInput = form.elements.site_title, tagInput = form.elements.tagline;
+    if (titleInput && tagInput) {
+      var title = titleInput.value.trim(), tag = tagInput.value.trim();
+      document.getElementById("pv-title").textContent = title || document.getElementById("pv-title").getAttribute("data-default") || "Your site";
+      document.getElementById("pv-tagline").textContent = tag || "Your tagline goes here";
+    }
   }
 
   document.getElementById("pv-title").setAttribute("data-default", document.getElementById("pv-title").textContent);

@@ -1,10 +1,10 @@
 {% extends "accounts/settings_base.html" %}
 {% load static theme %}
-{% block title %}Theme settings{% endblock %}
+{% block title %}Look settings{% endblock %}
 {% block theme_head %}{% theme_head %}<link rel="stylesheet" href="{% static 'css/theme-editor.css' %}">{% endblock %}
 {% block main_class %}container theme-page{% endblock %}
 {% block panel %}
-  <p class="hint">Make your profile and posts look like yours. Themes only apply to <a href="{% url 'profile' user.username %}">your profile</a> and your post pages; everything else stays the standard look.</p>
+  <p class="hint">Make your profile and posts look like yours. The look only applies to <a href="{% url 'profile' user.username %}">your profile</a> and your post pages; everything else stays the standard look. Your site title, tagline and About text are on the <a href="{% url 'settings_profile' %}">Profile</a> tab.</p>
 
   <form method="post" enctype="multipart/form-data" class="settings-form theme-form" id="theme-form" novalidate>
     {% csrf_token %}
@@ -12,14 +12,6 @@
 
     <div class="theme-layout">
       <div class="theme-controls">
-        <section class="field-group">
-          <h2>Site</h2>
-          <label>Site title {{ form.site_title }} {{ form.site_title.errors }}</label>
-          <label>Tagline {{ form.tagline }} {{ form.tagline.errors }}</label>
-          <label>{{ form.about_md.label }} {{ form.about_md }} {{ form.about_md.errors }}</label>
-          <p class="hint">Markdown, shown on your profile page. Everything that works in posts works here: headings, links, images, code, tables.</p>
-        </section>
-
         <section class="field-group">
           <h2>Starter theme</h2>
           <p class="hint">Pick a starting point, then change anything below.</p>

@@ -90,11 +90,13 @@ def settings_agents(request):
             messages.error(request, error)
             return redirect("settings_agents")
         token, plaintext = ApiToken.issue(user, name, scope)
-        if request.POST.get("label_ai"):
+        declared_now = request.POST.get("token_for") == "agent" and not user.is_agent
+        if declared_now:
+            # The only way creating a token changes how the site is presented, and only when this answer was chosen.
             user.is_agent = True
             user.save(update_fields=["is_agent"])
         log.info("token created user=%s token=%s scope=%s", user.username, token.pk, scope)
-        context.update(tokens=user.api_tokens.all(), new_token=plaintext, new_token_name=token.name)
+        context.update(tokens=user.api_tokens.all(), new_token=plaintext, new_token_name=token.name, declared_now=declared_now)
         response = render(request, "agents/settings_agents.html", context)
         add_never_cache_headers(response)  # the plaintext token is on this page: never cache it
         return response
@@ -116,5 +118,5 @@ def revoke_token(request, token_id):
 def toggle_agent_label(request):
     request.user.is_agent = bool(request.POST.get("is_agent"))
     request.user.save(update_fields=["is_agent"])
-    messages.success(request, "Saved.")
+    messages.success(request, "Declared as an AI agent." if request.user.is_agent else "No longer declared as an AI agent.")
     return redirect("settings_agents")

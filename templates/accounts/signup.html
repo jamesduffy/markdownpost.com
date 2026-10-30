@@ -1,9 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Sign up{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/settings.css' %}">{% endblock %}
 {% block main_class %}container auth{% endblock %}
 {% block scripts %}{% if turnstile_site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
 {% block content %}
   <h1 class="page-title">Create your account</h1>
+  <p class="lede">Your site will be at <strong class="site-addr">{{ host }}/@yourname/</strong>, with your username in place of <em>yourname</em>.</p>
   <form method="post" class="stack">
     {% csrf_token %}
     {{ form.non_field_errors }}

@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from . import storage
-from .models import Post
+from .models import Helpful, Post
 
 
 def _set_visibility(modeladmin, request, queryset, visibility):
@@ -12,9 +12,53 @@ def _set_visibility(modeladmin, request, queryset, visibility):
     messages.success(request, f"{updated} post(s) set to {visibility}.")
 
 
+class HelpfulInline(admin.TabularInline):
+    """Who marked this post helpful, and when. Read-only: marks can only be made by users, never by hand."""
+
+    model = Helpful
+    extra = 0
+    fields = ("user", "created_at")
+    readonly_fields = ("user", "created_at")
+    can_delete = False
+    ordering = ("-created_at",)
+    verbose_name_plural = "Helpful marks (private: never shown to users)"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Helpful)
+class HelpfulAdmin(admin.ModelAdmin):
+    """The owner's view of who found what helpful. Can't add or edit; deleting a row removes a suspect vote and
+    re-ranks the post."""
+
+    list_display = ("created_at", "user", "post_link")
+    list_display_links = None
+    list_filter = ("created_at", "user")
+    search_fields = ("user__username", "post__title", "post__id", "post__author__username")
+    date_hierarchy = "created_at"
+    list_select_related = ("user", "post", "post__author")
+    ordering = ("-created_at",)
+    list_per_page = 50
+    readonly_fields = ("post", "user", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description="Post", ordering="post__title")
+    def post_link(self, obj):
+        return format_html('<a href="{}">{}</a> by @{}', reverse("admin:posts_post_change", args=[obj.post_id]), obj.post.display_title, obj.post.author.username)
+
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ("display_title", "author_link", "is_draft", "visibility", "excerpt_short", "created_at", "updated_at", "site_link")
+    list_display = ("display_title", "author_link", "is_draft", "visibility", "discoverable", "excerpt_short", "created_at", "updated_at", "site_link")
     list_display_links = ("display_title",)
     list_filter = ("is_draft", "visibility", "created_at", "author")
     list_select_related = ("author",)
@@ -23,6 +67,7 @@ class PostAdmin(admin.ModelAdmin):
     autocomplete_fields = ("author",)
     ordering = ("-created_at",)
     list_per_page = 50
+    inlines = (HelpfulInline,)
     actions = ("make_public", "make_unlisted", "make_private", "mark_draft")
     readonly_fields = ("id", "created_at", "updated_at", "excerpt", "links", "body_preview")
     fieldsets = (
@@ -30,6 +75,12 @@ class PostAdmin(admin.ModelAdmin):
         ("Content", {"fields": ("excerpt", "body_preview", "links")}),
         ("Metadata", {"fields": ("id", "created_at", "updated_at")}),
     )
+
+    @admin.display(description="Discoverable", boolean=True)
+    def discoverable(self, obj):
+        from .discovery import user_is_discoverable
+
+        return obj.visibility == Post.Visibility.PUBLIC and not obj.is_draft and user_is_discoverable(obj.author)
 
     @admin.display(description="Title", ordering="title")
     def display_title(self, obj):

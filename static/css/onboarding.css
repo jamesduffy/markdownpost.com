@@ -18,6 +18,7 @@
 .onb-form .field-group { border: 0; padding: 0; margin: 0 0 18px; display: grid; gap: 14px; }
 .onb-form .field-group label { display: grid; gap: 4px; font-weight: 600; font-size: var(--scale-1); }
 .onb-form input[type=text], .onb-form textarea { width: 100%; font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+.onb-form ::placeholder { color: var(--muted); opacity: 1; } /* 4.8:1 light, 6.6:1 dark on --surface */
 .onb-form .count { font-weight: 400; color: var(--muted); }
 .onb-form .avatar-edit { display: flex; gap: 20px; align-items: center; }
 
@@ -29,10 +30,18 @@
 .onb-finish { text-align: center; padding: 24px 0; }
 .onb-finish .btn.huge { margin: 12px 0 8px; }
 .onb-secondary { margin: 8px 0; }
+.onb-copy { max-width: 460px; margin: 0 auto 18px; text-align: left; }
+.onb-list li .copy-row { margin-top: 8px; }
+/* Secondary actions: real links (underlined, 4.8:1+ on --bg in both modes), not faint grey text. */
+.onb-link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: var(--scale0); font-weight: 600; padding: 8px 2px; }
+.onb-link:hover { text-decoration-thickness: 2px; }
+.onb-actions .btn.ghost { border-color: var(--fg); }
+.look-state { margin: 0 0 14px; }
 
 .look-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 @media (min-width: 560px) { .look-grid { grid-template-columns: repeat(3, 1fr); } }
-.look-card { position: relative; display: grid; gap: 6px; cursor: pointer; }
+.look-card { position: relative; display: grid; gap: 6px; cursor: pointer; padding: 8px; border: 2px solid var(--border); border-radius: 16px; }
+.look-card:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
 .look-card input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .look-preview { display: grid; gap: 6px; align-content: start; min-height: 120px; padding: 12px; border-radius: 12px; overflow: hidden; }
 .look-title { font-weight: 700; font-size: 1.05em; line-height: 1.25; overflow-wrap: anywhere; font-family: var(--tf-heading, inherit); }
@@ -44,7 +53,7 @@
 .look-dots i:nth-child(2) { background: var(--t-muted); }
 .look-dots i:nth-child(3) { background: var(--t-accent); }
 .look-name { font-weight: 600; text-align: center; font-size: var(--scale-1); }
-.look-card input:checked ~ .look-preview { outline: 3px solid var(--accent); outline-offset: 3px; }
-.look-card input:checked ~ .look-name::before { content: "✓ "; }
-.look-card input:focus-visible ~ .look-preview { outline: 3px solid var(--fg); outline-offset: 3px; }
+.look-card input:checked ~ .look-name .look-check::before { content: "✓ "; }
+.look-card input:checked ~ .look-name { color: var(--accent); }
+.look-card:has(input:focus-visible) { outline: 3px solid var(--fg); outline-offset: 2px; }
 .look-card:hover .look-preview { filter: brightness(1.05); }

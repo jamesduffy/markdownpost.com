@@ -5,20 +5,25 @@ import uuid
 from functools import wraps
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import RequestDataTooBig
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods, require_POST
 
 from uploads import service as uploads_service
 
-from . import storage
+from accounts import ratelimit
+
+from . import helpful, seo, storage
 from .models import Post
 from .service import CLIENT_ID_RE, ApiError, apply_fields, clean_fields
 from .render import make_excerpt, render_document, render_document_cached
@@ -39,8 +44,9 @@ WHO_FILTERS = {"agents": True, "people": False}  # ?who=agents|people narrows th
 
 
 def _feed(request):
-    """Public, published posts (newest first), narrowed by ?q= (search) and ?who= (AI agents / people)."""
-    posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, is_draft=False).select_related("author")
+    """Public, published posts, narrowed by ?q= (search) and ?who= (AI agents / people). Newest first, or with
+    ?sort=helpful by the stored helpful rank (no votes last), newest first among equals. Returns (posts, q, who, sort)."""
+    posts = Post.objects.discoverable().select_related("author")
     q = request.GET.get("q", "").replace("\x00", "").strip()[:100]
     if q:
         posts = posts.filter(Q(title__icontains=q) | Q(excerpt__icontains=q) | Q(search_text__icontains=q) | Q(author__username__icontains=q))
@@ -49,22 +55,25 @@ def _feed(request):
         posts = posts.filter(author__is_agent=WHO_FILTERS[who])
     else:
         who = ""
-    return posts, q, who
+    sort = "helpful" if request.GET.get("sort") == "helpful" else ""
+    if sort:
+        posts = posts.order_by(F("helpful_rank").desc(nulls_last=True), "-created_at", "-pk")
+    return posts, q, who, sort
 
 
 def discover(request):
-    posts, q, who = _feed(request)
-    return render(request, "posts/discover.html", {"page": _paginate(request, posts), "q": q, "who": who})
+    posts, q, who, sort = _feed(request)
+    return render(request, "posts/discover.html", {"page": _paginate(request, posts), "q": q, "who": who, "sort": sort})
 
 
 def home(request):
     """The front page. Old links like /?q=... and /?page=2 still show the plain feed."""
     if any(key in request.GET for key in ("q", "page")):
         return discover(request)
-    posts, _, who = _feed(request)
+    posts, _, who, sort = _feed(request)
     latest = list(posts[:8])
-    agent_posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, is_draft=False, author__is_agent=True).select_related("author")[:4]
-    return render(request, "posts/home.html", {"latest": latest, "who": who, "agent_posts": list(agent_posts), "endpoint": request.build_absolute_uri("/mcp/")})
+    agent_posts = Post.objects.discoverable().filter(author__is_agent=True).select_related("author")[:4]
+    return render(request, "posts/home.html", {"latest": latest, "who": who, "sort": sort, "agent_posts": list(agent_posts), "endpoint": request.build_absolute_uri("/mcp/")})
 
 
 def profile(request, username):
@@ -72,7 +81,8 @@ def profile(request, username):
     posts = owner.posts.all()
     if request.user != owner:
         posts = posts.filter(visibility=Post.Visibility.PUBLIC, is_draft=False)
-    return render(request, "posts/profile.html", {"owner": owner, "page": _paginate(request, posts.select_related("author"))})
+    page = _paginate(request, posts.select_related("author"))
+    return render(request, "posts/profile.html", {"owner": owner, "page": page, "seo": seo.profile_seo(request, owner, page.number)})
 
 
 def _visible_post(request, username, post_id):
@@ -112,8 +122,54 @@ def post_detail(request, username, post_id):
         else []
     )
     author_posts = Post.objects.filter(author=post.author, visibility=Post.Visibility.PUBLIC, is_draft=False).count()
-    context = {"post": post, "doc": doc, "more": more, "author_posts": author_posts, "is_owner": request.user.pk == post.author_id}
+    is_owner = request.user.pk == post.author_id
+    context = {"post": post, "doc": doc, "more": more, "author_posts": author_posts, "is_owner": is_owner, "seo": seo.post_seo(request, post, doc)}
+    if helpful.markable(post) and not is_owner:
+        # Only the viewer's own state; never anyone's count.
+        context["helpful_open"] = True
+        context["helpful_marked"] = request.user.is_authenticated and helpful.is_marked(request.user, post)
     return render(request, "posts/detail.html", context)
+
+
+def _helpful_action(request, username, post_id, action):
+    """Shared by mark and undo: plain form POST, then back to the post with a friendly message (no counts, ever)."""
+    back = reverse("post_detail", args=[username, post_id]) + "#helpful"
+    if not request.user.is_authenticated:
+        return redirect_to_login(back)
+    post = get_object_or_404(Post.objects.select_related("author"), pk=post_id, author__username=username)
+    if not helpful.markable(post):
+        raise Http404  # drafts, private and unlisted posts: same answer as a missing post
+    ip = ratelimit.client_ip(request)
+    user_key, limit = str(request.user.pk), settings.HELPFUL_LIMIT_PER_HOUR
+    if ratelimit.is_limited("helpful-user", user_key, limit, 3600) or ratelimit.is_limited("helpful-ip", ip, limit, 3600):
+        messages.error(request, "You're doing that a lot. Please try again a little later.")
+        return redirect(back)
+    try:
+        action(request.user, post)
+    except helpful.HelpfulError as exc:
+        messages.error(request, str(exc))
+        return redirect(back)
+    ratelimit.record("helpful-user", user_key)
+    ratelimit.record("helpful-ip", ip)
+    return None
+
+
+@require_POST
+def helpful_mark(request, username, post_id):
+    response = _helpful_action(request, username, post_id, helpful.mark)
+    if response is None:
+        messages.success(request, "Thanks, marked as helpful.")
+        response = redirect(reverse("post_detail", args=[username, post_id]) + "#helpful")
+    return response
+
+
+@require_POST
+def helpful_unmark(request, username, post_id):
+    response = _helpful_action(request, username, post_id, helpful.unmark)
+    if response is None:
+        messages.success(request, "Your helpful mark was removed.")
+        response = redirect(reverse("post_detail", args=[username, post_id]) + "#helpful")
+    return response
 
 
 def post_raw(request, username, post_id):
@@ -124,6 +180,7 @@ def post_raw(request, username, post_id):
         return _unavailable(request)
     response = HttpResponse(body, content_type="text/plain; charset=utf-8")
     response["X-Content-Type-Options"] = "nosniff"
+    response["X-Robots-Tag"] = "noindex"  # the page itself is the thing to index, not its markdown twin
     return response
 
 

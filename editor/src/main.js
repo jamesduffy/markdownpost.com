@@ -6,7 +6,7 @@ import { toggleLinePrefix, toggleWrap } from "./commands.js";
 import { createDraftStore } from "./drafts.js";
 import { createUploader } from "./images.js";
 import { livePreview } from "./livepreview.js";
-import { canMarkSynced, classifyFailure, clientIdFor, menuDrafts, restorableNew } from "./logic.js";
+import { canMarkSynced, classifyFailure, clientIdFor, menuDrafts, primaryLabel, publishedMessage, restorableNew, savedStatus } from "./logic.js";
 import { slashMenu } from "./slash.js";
 import { createToolbar } from "./toolbar.js";
 
@@ -15,6 +15,7 @@ const titleEl = document.getElementById("title");
 const visibilityEl = document.getElementById("visibility");
 const statusEl = document.getElementById("status");
 const doneEl = document.getElementById("done");
+const backEl = document.getElementById("back");
 
 const userId = root.dataset.user || "anon";
 const store = createDraftStore(userId);
@@ -25,8 +26,8 @@ let lastUpdated = root.dataset.updated || null; // server `updated` stamp this e
 let draftKey = postId || `new-${crypto.randomUUID()}`;
 let locked = false;
 let conflict = false;
-let isDraft = root.dataset.draft === "1"; // posts start as drafts; "Save" is what publishes them
-let publishRequested = false; // Save was pressed but the server hasn't confirmed yet (e.g. offline)
+let isDraft = root.dataset.draft === "1"; // posts start as drafts; the primary button (Publish) is what publishes them
+let publishRequested = false; // Publish was pressed but the server hasn't confirmed yet (e.g. offline)
 let failure = null; // message of the last 4xx the server rejected this content with; cleared by the next good save
 let createMaybeSent = false; // a create request got no answer: it may exist server-side (retries reuse client_id)
 let warnedStorage = false;
@@ -73,7 +74,7 @@ function saveLocal(synced = false) {
   const ok = store.write(draftKey, draft);
   if (!ok && !warnedStorage) {
     warnedStorage = true;
-    setStatus("Couldn't save on this device (storage full or blocked) · keep this tab open until it syncs", true);
+    setStatus("Couldn't keep a copy on this device (storage full or blocked) · keep this tab open until it syncs", true);
   }
   return ok;
 }
@@ -92,7 +93,7 @@ async function flush() {
     return setStatus("");
   }
   saveLocal(false);
-  if (isOffline()) return setStatus("Offline · saved on this device", true);
+  if (isOffline()) return setStatus("Offline · kept on this device", true);
   if (postId && lastUpdated) payload.base = lastUpdated;
   if (publishRequested) payload.is_draft = false;
   saving = true;
@@ -143,15 +144,15 @@ async function flush() {
     if (kind === "gone") return deletedElsewhere();
     saveLocal(false);
     if (kind === "auth") {
-      setStatus("Signed out · saved on this device. Log in again to sync.", true);
+      setStatus("Signed out · kept on this device. Log in again to sync.", true);
       timer = setTimeout(flush, 30000);
     } else if (kind === "rejected") {
       dirty = false; // a rejected edit won't succeed on retry (e.g. too large)
-      publishRequested = false; // otherwise Save would claim it "will finish saving" forever
+      publishRequested = false; // otherwise Publish would claim it "will finish saving" forever
       saveLocal(false);
       setStatus(err.message, true);
     } else {
-      setStatus(isOffline() || !status ? "Offline · saved on this device" : "Couldn't sync · saved on this device", true);
+      setStatus(isOffline() || !status ? "Offline · kept on this device" : "Couldn't sync · kept on this device", true);
       timer = setTimeout(flush, 8000);
     }
   } finally {
@@ -171,16 +172,25 @@ function deletedElsewhere() {
   saveLocal(false);
   setStatus("Post deleted elsewhere", true);
   banner("This post was deleted elsewhere. Your text is still here.", [
-    ["Save as a new draft", () => ((conflict = false), setDraftState(true), flush())],
+    ["Keep as a new draft", () => ((conflict = false), setDraftState(true), flush())],
     ["Discard", () => ((locked = true), (dirty = false), store.remove(draftKey), (location.href = "/"))],
   ]);
 }
 
-const savedLabel = () => (isDraft ? "Draft saved" : "Saved");
+const savedLabel = () => savedStatus({ isDraft, visibility: visibilityEl.value });
+
+function updateButtons() {
+  doneEl.textContent = primaryLabel({ isDraft, visibility: visibilityEl.value });
+  // "←" goes back to the post once it is published, and to the drafts list while it is still a draft.
+  if (backEl) {
+    backEl.href = (isDraft ? "/drafts/" : viewUrl) || "/drafts/";
+    backEl.setAttribute("aria-label", isDraft ? "Back to your drafts" : "Back to the post");
+  }
+}
 
 function setDraftState(draft) {
   isDraft = draft;
-  doneEl.textContent = draft ? "Save" : "Done";
+  updateButtons();
 }
 
 // Don't save half-composed IME text (the composed characters would be sent, then replaced).
@@ -193,6 +203,7 @@ function autoFlush() {
 function schedule() {
   if (locked) return;
   dirty = true;
+  document.querySelector(".draft-banner.published")?.remove();
   setStatus(isDraft ? "Draft · editing…" : "Editing…");
   clearTimeout(timer);
   timer = setTimeout(autoFlush, 1200);
@@ -319,7 +330,7 @@ function restore() {
   } else if (localBase < serverBase && !local.synced && differs) {
     banner("You have offline changes that conflict with a newer version of this post.", [
       ["Use my offline version", () => (applyContent(local), (dirty = true), flush())],
-      ["Discard them", () => (store.write(draftKey, snapshot(true)), setStatus("Saved"))],
+      ["Discard them", () => (store.write(draftKey, snapshot(true)), setStatus(savedLabel()))],
     ]);
   }
 }
@@ -436,10 +447,38 @@ document.addEventListener("mousedown", (e) => {
   view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });
 });
 
-visibilityEl.addEventListener("change", () => (schedule(), flush()));
+visibilityEl.addEventListener("change", () => (updateButtons(), schedule(), flush()));
+updateButtons();
+
+// Shown after a draft is published: says so plainly, with the link.
+function showPublished() {
+  const url = new URL(viewUrl, location.origin).href;
+  document.querySelector(".draft-banner")?.remove();
+  const el = document.createElement("div");
+  el.className = "draft-banner published";
+  el.setAttribute("role", "status");
+  const text = document.createElement("span");
+  text.textContent = publishedMessage(visibilityEl.value);
+  const view = Object.assign(document.createElement("a"), { href: viewUrl, textContent: "View post", className: "banner-link" });
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.textContent = "Copy link";
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      copy.textContent = "Link copied";
+    } catch {
+      copy.textContent = "Copy failed";
+    }
+  });
+  el.append(text, view, copy);
+  root.prepend(el);
+  setStatus(visibilityEl.value === "private" ? "Saved privately" : "Published");
+}
 doneEl.addEventListener("click", async (e) => {
   e.preventDefault();
   // Publishing an empty post is rejected by the server, so an empty one is just left as a draft.
+  const wasDraft = isDraft;
   if (isDraft && (titleEl.value.trim() || view.state.doc.toString().trim())) {
     publishRequested = true; // Save: take it out of drafts using the visibility chosen above
     dirty = true;
@@ -449,11 +488,13 @@ doneEl.addEventListener("click", async (e) => {
   if (dirty || conflict || publishRequested) {
     // Not on the server yet (offline, signed out, or a conflict): stay put, the draft is safe on this device.
     saveLocal(false);
-    if (!conflict) setStatus("Saved on this device · it will finish saving when you're back online", true);
+    if (!conflict) setStatus(wasDraft ? "Not published yet · kept on this device, it will finish when you're back online" : "Kept on this device · it will finish saving when you're back online", true);
     return;
   }
   if (failure) return setStatus(failure, true); // the server rejected this content: stay so the message can be read and fixed
-  location.href = (isDraft ? "/" : viewUrl) || "/";
+  if (wasDraft && !isDraft && viewUrl) return showPublished(); // first publish: stay and say so, with the link
+  if (isDraft) return setStatus("Nothing to publish yet. Add a title or some text.", true);
+  location.href = viewUrl || "/";
 });
 const saveNow = () => saveLocal(canMarkSynced({ postId, dirty, failed: !!failure }));
 document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && (saveNow(), flush()));

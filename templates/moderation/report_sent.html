@@ -1,0 +1,8 @@
+{% extends "moderation/_page.html" %}
+{% block title %}Report received{% endblock %}
+{% block content %}
+  <h1 class="page-title">Report received</h1>
+  <p class="lede">Thank you. A person will look at it. We keep one open report per person and item, so sending it again is not needed. We may not be able to tell you the outcome.</p>
+  <p><a class="btn ghost" href="{% url 'discover' %}">Back to Discover</a></p>
+  {% include "_legal_links.html" %}
+{% endblock %}

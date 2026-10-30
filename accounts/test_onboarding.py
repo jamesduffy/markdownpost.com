@@ -103,12 +103,19 @@ class OnboardingTests(TestCase):
         r = self.client.get("/welcome/agent/")
         self.assertContains(r, 'href="/settings/agents/"')
         self.assertContains(r, 'href="/help/agents-connect/"')
+        self.assertContains(r, 'value="http://testserver/mcp/"')  # absolute endpoint, not a relative path
+        self.assertContains(r, 'data-copy="#mcp-endpoint"')
 
     def test_finish_has_primary_write_and_quiet_discover(self):
         self.login()
         r = self.client.get("/welcome/done/")
         self.assertContains(r, 'class="btn huge" href="/new/">Write your first post')
-        self.assertContains(r, 'class="quiet-link" href="/discover/">Browse Discover')
+        self.assertContains(r, 'class="onb-link" href="/discover/">Browse Discover')
+        self.assertContains(r, 'class="onb-link" href="/welcome/">Back to setup')
+        self.assertContains(r, 'id="site-url"')
+        self.assertContains(r, 'value="http://testserver/@alice/"')  # absolute, with a copy button and live region
+        self.assertContains(r, 'data-copy="#site-url"')
+        self.assertContains(r, 'data-copy-status')
 
     def test_existing_user_can_revisit_and_edit(self):
         User.objects.filter(pk=self.alice.pk).update(full_name="Old", site_title="Old title")
@@ -136,4 +143,4 @@ class SignupFlowTests(TestCase):
         from .models import SiteSettings
 
         SiteSettings.objects.update_or_create(pk=1, defaults={"registration_open": False})
-        self.assertEqual(self.client.post("/signup/", {"username": "zed", "password1": PW, "password2": PW}).status_code, 403)
+        self.assertEqual(self.client.post("/signup/", {"username": "zed", "password1": PW, "password2": PW}).status_code, 200)

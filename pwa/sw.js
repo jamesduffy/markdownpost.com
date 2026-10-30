@@ -1,7 +1,7 @@
 // Static assets and the editor shell are cached so you can keep writing offline. Other pages and all API
 // calls always hit the network. Editor pages contain the post being edited, so each signed-in user gets their
 // own cache (the server tags editor pages with X-Mdp-User) and they're all emptied on logout (see app.js).
-const CACHE = "markdownpost-v6"; // v6: new menu, home and onboarding assets. v5: editor pages are cached per user; drops the shared v4 editor cache
+const CACHE = "markdownpost-v7"; // v7: dock clearance, help layout, home agent door and theme strip; offline page says Home. v6: new menu, home and onboarding assets. v5: editor pages are cached per user; drops the shared v4 editor cache
 const EDITOR_PREFIX = "markdownpost-editor-"; // + user id
 const META = "markdownpost-meta"; // remembers which user last used this browser, to pick the right cache offline
 const EDITOR_PATH = /^\/(new\/|@[^/]+\/[^/]+\/edit\/)$/;

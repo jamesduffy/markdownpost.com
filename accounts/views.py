@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, login
@@ -17,10 +19,12 @@ from .forms import EmailForm, ProfileForm, SignupForm, ThemeForm, VerifiedEmailP
 
 
 User = get_user_model()
+log = logging.getLogger("accounts")
 
 
-def too_many_requests(request, wait_minutes):
-    response = render(request, "accounts/rate_limited.html", {"wait_minutes": wait_minutes}, status=429)
+def too_many_requests(request, wait_minutes, came_from=""):
+    """came_from: "signin" (login, password reset) or "settings" (signed-in forms) picks the extra link on the page."""
+    response = render(request, "accounts/rate_limited.html", {"wait_minutes": wait_minutes, "came_from": came_from}, status=429)
     response["Retry-After"] = str(wait_minutes * 60)
     return response
 
@@ -37,7 +41,7 @@ class RateLimitedLoginView(LoginView):
     def post(self, request, *args, **kwargs):
         window = settings.LOGIN_LIMIT_WINDOW
         if any(ratelimit.is_limited(scope, key, limit, window) for scope, key, limit in self._keys(request)):
-            return too_many_requests(request, window // 60)
+            return too_many_requests(request, window // 60, "signin")
         if turnstile.enabled():
             ok, error = turnstile.verify(request)
             if not ok:
@@ -67,26 +71,47 @@ def signup(request):
     if request.user.is_authenticated:
         return redirect("new_post")
     if not registration_open():
-        return render(request, "accounts/signup_closed.html", status=403)
+        return render(request, "accounts/signup_closed.html")
     form = SignupForm(request.POST or None)
     if request.method == "POST":
         ip = ratelimit.client_ip(request)
         window = settings.SIGNUP_LIMIT_WINDOW
         if ratelimit.is_limited("signup", ip, settings.SIGNUP_LIMIT, window):
-            return too_many_requests(request, window // 60)
+            return too_many_requests(request, window // 60, "signup")
         ratelimit.record("signup", ip)  # every attempt counts, valid or not
         if turnstile.enabled():
             ok, error = turnstile.verify(request)
             if not ok:
-                form = SignupForm(initial={"username": request.POST.get("username", "")})
-                return render(request, "accounts/signup.html", {"form": form, "turnstile_error": error, **turnstile.context()})
+                form = SignupForm(initial={"username": request.POST.get("username", ""), "email": request.POST.get("email", "")})
+                return render(request, "accounts/signup.html", {"form": form, "host": request.get_host(), "turnstile_error": error, **turnstile.context()})
         if form.is_valid():
-            login(request, form.save())
+            user = form.save()
+            login(request, user)
+            if user.email:
+                # Best effort: a mail problem must never block someone from getting an account.
+                if send_verification_mail(request, user):
+                    messages.success(request, f"We sent a confirmation link to {user.email}. Open it to finish adding your email.")
+                else:
+                    messages.warning(request, "Your account is ready, but we couldn't send the confirmation email. You can resend it in Settings, Account.")
             return redirect("onboarding_site")
-    return render(request, "accounts/signup.html", {"form": form, **turnstile.context()})
+    return render(request, "accounts/signup.html", {"form": form, "host": request.get_host(), **turnstile.context()})
 
 
 # ---- settings ---------------------------------------------------------------
+
+
+def send_verification_mail(request, user):
+    """Sends the confirmation link; returns False (and logs) instead of raising if mail is down or the user is over budget."""
+    window = settings.RESET_LIMIT_WINDOW
+    if ratelimit.is_limited("verify-email", str(user.pk), settings.RESET_LIMIT, window):
+        return False
+    ratelimit.record("verify-email", str(user.pk))
+    try:
+        emailverify.send_verification(request, user)
+    except Exception:  # SMTP down, bad config...
+        log.exception("verification email failed user=%s", user.pk)
+        return False
+    return True
 
 
 @login_required
@@ -157,13 +182,10 @@ def settings_account(request):
 
 def _send_verification(request, user):
     """Rate limited per user (shares the password-reset budget) so it can't be used to spam an inbox."""
-    window = settings.RESET_LIMIT_WINDOW
-    if ratelimit.is_limited("verify-email", str(user.pk), settings.RESET_LIMIT, window):
-        messages.error(request, "Too many verification emails. Try again later.")
-        return
-    ratelimit.record("verify-email", str(user.pk))
-    emailverify.send_verification(request, user)
-    messages.success(request, f"Email saved. We sent a confirmation link to {user.email}.")
+    if send_verification_mail(request, user):
+        messages.success(request, f"Email saved. We sent a confirmation link to {user.email}.")
+    else:
+        messages.error(request, "We couldn't send the confirmation email just now (or you've asked for too many). Try again later.")
 
 
 @login_required
@@ -202,7 +224,7 @@ class PasswordChange(PasswordChangeView):
         # Wrong old passwords count per user, same budget as delete-account.
         window = settings.LOGIN_LIMIT_WINDOW
         if ratelimit.is_limited("password-change", str(request.user.pk), settings.LOGIN_LIMIT_PER_USER, window):
-            return too_many_requests(request, window // 60)
+            return too_many_requests(request, window // 60, "settings")
         return super().post(request, *args, **kwargs)
 
     def form_invalid(self, form):
@@ -231,7 +253,7 @@ class RateLimitedPasswordReset(PasswordResetView):
         ip = ratelimit.client_ip(request)
         window = settings.RESET_LIMIT_WINDOW
         if ratelimit.is_limited("password-reset", ip, settings.RESET_LIMIT, window):
-            return too_many_requests(request, window // 60)
+            return too_many_requests(request, window // 60, "signin")
         ratelimit.record("password-reset", ip)  # every request counts, whether or not the email exists
         if turnstile.enabled():
             ok, error = turnstile.verify(request)
@@ -250,7 +272,7 @@ def delete_account(request):
     user = request.user
     window = settings.LOGIN_LIMIT_WINDOW
     if ratelimit.is_limited("delete-account", str(user.pk), settings.LOGIN_LIMIT_PER_USER, window):
-        return too_many_requests(request, window // 60)
+        return too_many_requests(request, window // 60, "settings")
     if not user.check_password(request.POST.get("password", "")) or request.POST.get("confirm", "").strip().lower() != user.username.lower():
         ratelimit.record("delete-account", str(user.pk))
         messages.error(request, "Account not deleted: check your password and type your username to confirm.")
@@ -261,6 +283,7 @@ def delete_account(request):
         except storage.StorageError:
             pass
     avatars.delete(user.avatar_key)
-    logout(request)
+    logout(request)  # clears the session, so the message goes into the fresh anonymous one
     user.delete()
+    messages.success(request, "Your account has been deleted.")
     return redirect("discover")

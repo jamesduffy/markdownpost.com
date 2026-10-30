@@ -1,11 +1,15 @@
 {% extends "accounts/onboarding/base.html" %}
+{% load static %}
 {% block step %}
   <div class="onb-finish">
     <h1 class="page-title">You're all set</h1>
-    <p class="lede">Your site is at <a href="{% url 'profile' user.username %}">/@{{ user.username }}/</a>. New posts start as drafts that only you can see, and nothing goes public until you choose to publish it.</p>
+    <p class="lede">Your site is at <a href="{% url 'profile' user.username %}" class="site-addr">{{ site_url }}</a>. New posts start as drafts that only you can see, and nothing goes public until you choose to publish it.</p>
+    <div class="copy-row onb-copy"><input type="text" readonly value="{{ site_url }}" id="site-url" aria-label="Your site address" data-select-on-focus><button type="button" class="btn ghost" data-copy="#site-url" data-copy-name="site address">Copy</button></div>
+    <span class="sr-only" role="status" aria-live="polite" data-copy-status></span>
     <p><a class="btn huge" href="{% url 'new_post' %}">Write your first post</a></p>
-    <p class="onb-secondary"><a class="quiet-link" href="{% url 'discover' %}">Browse Discover</a></p>
+    <p class="onb-secondary"><a class="onb-link" href="{% url 'discover' %}">Browse Discover</a></p>
     <p class="hint">Need a hand? <a href="{{ help_url }}">Read the help pages</a>.</p>
-    <p class="onb-secondary"><a class="quiet-link" href="{% url 'onboarding_site' %}">Back to setup</a></p>
+    <p class="onb-secondary"><a class="onb-link" href="{% url 'onboarding_site' %}">Back to setup</a></p>
   </div>
+  <script src="{% static 'js/agents.js' %}" defer></script>
 {% endblock %}

@@ -1,0 +1,26 @@
+/* Editor header and status: readable status text, 44px touch targets, Help and My site links. */
+.editor-bar { gap: 8px; }
+.editor-bar .status { flex: 1; min-width: 0; color: var(--fg); font-size: var(--scale0); line-height: 1.3; overflow-wrap: anywhere; }
+.editor-bar .status.error { color: var(--danger); font-weight: 600; }
+.editor-bar .icon-btn { width: 44px; height: 44px; flex: none; }
+.editor-bar .bar-help { border: 1px solid var(--border); font-weight: 700; font-size: var(--scale0); width: 36px; height: 36px; position: relative; }
+.editor-bar .bar-help::after { content: ""; position: absolute; inset: -4px; } /* 44px hit area */
+.bar-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; color: var(--fg); font-size: var(--scale-1); text-decoration: underline; text-underline-offset: 3px; }
+.editor-bar select { min-height: 44px; color: var(--fg); font-size: var(--scale-1); border-color: var(--border); }
+.editor-bar .btn, .editor-bar .btn.small { min-height: 44px; white-space: nowrap; }
+.drafts-menu summary { min-height: 44px; display: inline-flex; align-items: center; }
+.drafts-pop .drafts-site { border-top: 1px solid var(--border); border-radius: 0 0 9px 9px; margin-top: 4px; color: var(--accent); font-weight: 600; }
+.drafts-pop .drafts-all { border-top: 0; margin-top: 0; border-radius: 9px; }
+.draft-banner.published { border-color: color-mix(in srgb, #2ea043 60%, var(--border)); background: color-mix(in srgb, #2ea043 12%, var(--bg)); font-size: var(--scale0); }
+.draft-banner.published .banner-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: underline; }
+.draft-banner.published button { min-height: 44px; }
+@media (min-width: 640px) { .drafts-pop .drafts-site { display: none; } .drafts-pop .drafts-all { border-top: 1px solid var(--border); border-radius: 0 0 9px 9px; margin-top: 4px; } }
+@media (max-width: 639px) {
+  .bar-site { display: none; }
+  header.editor-bar { flex-wrap: wrap; row-gap: 0; gap: 4px; padding: 4px 8px; }
+  header.editor-bar .drafts-menu summary.btn.small { padding: 0 10px; }
+  header.editor-bar select#visibility { padding: 0 24px 0 8px; background-position: right 8px center; }
+  header.editor-bar a#done { padding: 0 14px; }
+  header.editor-bar .bar-help { margin-left: auto; }
+  .editor-bar .status { order: 10; flex-basis: 100%; }
+}

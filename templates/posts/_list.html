@@ -1,3 +1,4 @@
+{% load feed %}
 {% for post in page %}
   <article class="card theme-card">
     <h2><a href="{% if post.is_draft %}{{ post.edit_url }}{% else %}{{ post.get_absolute_url }}{% endif %}">{{ post.display_title }}</a></h2>
@@ -13,7 +14,7 @@
 
 {% if page.has_other_pages %}
   <nav class="pager" aria-label="Pagination">
-    {% if page.has_previous %}<a class="btn ghost" href="?page={{ page.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if who %}&amp;who={{ who }}{% endif %}">← Newer</a>{% else %}<span></span>{% endif %}
-    {% if page.has_next %}<a class="btn ghost" href="?page={{ page.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if who %}&amp;who={{ who }}{% endif %}">Older →</a>{% endif %}
+    {% if page.has_previous %}<a class="btn ghost" href="{% feed_url '' q who sort page.previous_page_number %}">← {% if sort %}Previous{% else %}Newer{% endif %}</a>{% else %}<span></span>{% endif %}
+    {% if page.has_next %}<a class="btn ghost" href="{% feed_url '' q who sort page.next_page_number %}">{% if sort %}Next{% else %}Older{% endif %} →</a>{% endif %}
   </nav>
 {% endif %}

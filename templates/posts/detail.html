@@ -3,22 +3,28 @@
 {% block title %}{{ post.display_title }}{% endblock %}
 {% block description %}{{ post.excerpt|default:"A post on MarkdownPost" }}{% endblock %}
 {% block meta %}
-  {% if post.visibility != 'public' or post.is_draft %}<meta name="robots" content="noindex">{% endif %}
-  {% if post.visibility != 'private' and not post.is_draft %}
-    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+  {% if seo.noindex %}<meta name="robots" content="noindex">{% endif %}
+  {% if seo.share %}
+    <link rel="canonical" href="{{ seo.canonical }}">
     <meta property="og:type" content="article">
-    <meta property="og:site_name" content="MarkdownPost">
-    <meta property="og:title" content="{{ post.display_title }}">
-    <meta property="og:description" content="{{ post.excerpt }}">
-    <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    <meta property="article:published_time" content="{{ post.created_at|date:'c' }}">
-    <meta property="article:author" content="@{{ post.author.username }}">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:site_name" content="{{ seo.site_name }}">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ seo.url }}">
+    <meta property="og:image" content="{{ seo.image }}">
+    <meta property="article:published_time" content="{{ seo.published }}">
+    <meta property="article:modified_time" content="{{ seo.modified }}">
+    <meta property="article:author" content="{{ seo.author_url }}">
+    <meta name="twitter:card" content="{{ seo.card }}">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    <meta name="twitter:image" content="{{ seo.image }}">
   {% endif %}
+  {% if seo.jsonld %}<script type="application/ld+json">{{ seo.jsonld|safe }}</script>{% endif %}
 {% endblock %}
 {% block theme_head %}{% theme_head %}{% endblock %}
 {% block body_attrs %}{% theme_attrs post.author %}{% endblock %}
-{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}">{% if seo.feed_url %}<link rel="alternate" type="application/atom+xml" title="{{ seo.feed_title }}" href="{{ seo.feed_url }}">{% endif %}{% endblock %}
 {% block main_class %}reader-page{% endblock %}
 
 {% block content %}
@@ -97,8 +103,9 @@
                   <form method="post" action="{{ post.draft_url }}">{% csrf_token %}<button type="submit">Move back to drafts</button></form>
                 {% endif %}
                 {% if is_owner %}
-                  <form method="post" action="{{ post.delete_url }}" data-confirm="Delete this post permanently?">
-                    {% csrf_token %}<button type="submit" class="danger">Delete post</button>
+                  <hr class="menu-sep">
+                  <form method="post" action="{{ post.delete_url }}" data-confirm="Delete this post permanently? This cannot be undone.">
+                    {% csrf_token %}<button type="submit" class="danger danger-item">Delete post</button>
                   </form>
                 {% endif %}
               </div>
@@ -120,10 +127,29 @@
 
       <footer class="post-foot">
         <div class="end-mark" aria-hidden="true">· · ·</div>
+        {% if helpful_open %}
+          <section class="helpful" id="helpful" aria-label="Was this post helpful?">
+            {% if not user.is_authenticated %}
+              <a class="helpful-link" href="{% url 'login' %}?next={{ post.get_absolute_url|urlencode }}">Sign in to say this was helpful</a>
+            {% elif helpful_marked %}
+              <form method="post" action="{% url 'helpful_unmark' post.author.username post.id %}" class="helpful-form">
+                {% csrf_token %}
+                <span class="helpful-state"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>You marked this helpful</span>
+                <button type="submit" class="helpful-undo">Undo</button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'helpful_mark' post.author.username post.id %}" class="helpful-form">
+                {% csrf_token %}
+                <button type="submit" class="helpful-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9H4v-9h3Zm0 0 4-7a2 2 0 0 1 2 2v3h5.2a2 2 0 0 1 2 2.3l-1.2 6.2a2 2 0 0 1-2 1.6H7"/></svg>This was helpful</button>
+              </form>
+            {% endif %}
+          </section>
+        {% endif %}
         <a class="byline big" href="{% url 'profile' post.author.username %}">
           <span class="avatar" aria-hidden="true">{% avatar_inner post.author %}</span>
           <span class="byline-text"><small>Written by</small><strong>{{ post.author.display_name }}</strong></span>
         </a>
+        <p class="report-row">{% include "moderation/_report_link.html" with post=post %}</p>
         {% if more %}
           <h2 class="more-title">More from @{{ post.author.username }}</h2>
           <div class="more-list">

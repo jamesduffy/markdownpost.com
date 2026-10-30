@@ -1,0 +1,7 @@
+<nav class="legal-links" aria-label="About and policies">
+  <a href="{% url 'terms' %}">Terms</a>
+  <a href="{% url 'privacy' %}">Privacy</a>
+  <a href="{% url 'content_policy' %}">Content policy</a>
+  <a href="{% url 'contact' %}">Contact</a>
+  <a href="{{ help_url|default:'/help/' }}">Help</a>
+</nav>

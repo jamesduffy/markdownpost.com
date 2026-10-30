@@ -321,6 +321,7 @@ class LimitsTests(TestCase):
             "Agent requests (MCP)": f"{s.MCP_REQUESTS_PER_MINUTE} per minute",
             "New posts created by agents": f"{s.MCP_POSTS_PER_HOUR} per hour",
             "Post edits made by agents": f"{s.MCP_UPDATES_PER_HOUR} per hour",
+            "Helpful marks and undos": f"{s.HELPFUL_LIMIT_PER_HOUR} per hour",
             "Post body": "500,000 bytes",
             "Image or photo file": "5 MB",
             "Image storage per account": "100 MB",

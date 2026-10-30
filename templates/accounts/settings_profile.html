@@ -7,6 +7,15 @@
     {{ form.non_field_errors }}
 
     <section class="field-group">
+      <h2>Your site</h2>
+      <p class="hint">The title, tagline and About text at the top of <a href="{% url 'profile' user.username %}">your public page</a>. How it looks (colors, fonts, layout) is on the <a href="{% url 'settings_theme' %}">Look</a> tab.</p>
+      <label>{{ form.site_title.label }} {{ form.site_title }} {{ form.site_title.errors }}</label>
+      <label>{{ form.tagline.label }} {{ form.tagline }} {{ form.tagline.errors }}</label>
+      <label>{{ form.about_md.label }} {{ form.about_md }} {{ form.about_md.errors }}</label>
+      <p class="hint">Markdown. Everything that works in posts works here: headings, links, images, code, tables.</p>
+    </section>
+
+    <section class="field-group">
       <h2>Photo</h2>
       <div class="avatar-edit">
         <span class="avatar xl" id="avatar-preview">{% avatar_inner user %}</span>
@@ -21,6 +30,7 @@
 
     <section class="field-group">
       <h2>About you</h2>
+      <p class="hint">Shown as small details on your page. Your bio appears only if you have no About text.</p>
       <label>{{ form.full_name.label }} {{ form.full_name }} {{ form.full_name.errors }}</label>
       <label>{{ form.location.label }} {{ form.location }} {{ form.location.errors }}</label>
       <label>{{ form.bio.label }} {{ form.bio }} <small class="count" data-count-for="id_bio">0 / 300</small> {{ form.bio.errors }}</label>

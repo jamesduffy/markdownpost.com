@@ -4,5 +4,9 @@
 {% block content %}
   <h1 class="page-title">Too many attempts</h1>
   <p class="lede">Please wait about {{ wait_minutes }} minutes and try again.</p>
-  <a class="btn ghost" href="{% url 'discover' %}">Back to Discover</a>
+  <p>
+    {% if came_from == "signin" %}<a class="btn" href="{% url 'login' %}">Back to sign in</a>
+    {% elif came_from == "settings" %}<a class="btn" href="{% url 'settings_account' %}">Back to Settings</a>{% endif %}
+    <a class="btn ghost" href="{% url 'discover' %}">Back to Discover</a>
+  </p>
 {% endblock %}

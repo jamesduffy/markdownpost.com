@@ -1,6 +1,6 @@
 # Themes
 
-A theme controls how your **profile page and your post pages** look: colors, background, fonts and layout. Each account has one theme. Open it from the menu with **Customize**, or go to {{origin}}/settings/theme/.
+A theme controls how your **profile page and your post pages** look: colors, background, fonts and layout. Each account has one theme. Open **Settings** from the menu and choose the **Look** tab, or go to {{origin}}/settings/theme/.
 
 ## How to use the theme page
 

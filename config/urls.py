@@ -12,6 +12,7 @@ urlpatterns = [
     path("", include("accounts.urls")),
     path("", include("agents.urls")),
     path("", include("helpdocs.urls")),
+    path("", include("moderation.urls")),
     path("", include("posts.urls")),
     path("manifest.webmanifest", post_views.manifest, name="manifest"),
     path("sw.js", post_views.service_worker, name="sw"),

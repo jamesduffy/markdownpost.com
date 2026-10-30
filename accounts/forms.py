@@ -6,10 +6,33 @@ from .models import User
 from .validators import validate_plain_text, validate_username
 
 
+def clean_new_email(value, exclude_pk=None):
+    """The one rule for an address someone types (signup, onboarding, Settings): trimmed, and not already confirmed elsewhere."""
+    email = (value or "").strip()
+    if email and User.objects.filter(email__iexact=email, email_verified=True).exclude(pk=exclude_pk).exists():
+        raise forms.ValidationError("That email is already verified on another account.")
+    return email
+
+
+EMAIL_OPTIONAL_LABEL = "Email (optional, lets you reset a forgotten password)"
+
+
 class SignupForm(UserCreationForm):
+    email = forms.EmailField(required=False, label=EMAIL_OPTIONAL_LABEL,
+        help_text="Without a confirmed email we can't reset your password. It stays private.",
+        widget=forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@example.com"}),
+    )
+
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username",)
+        fields = ("username", "email")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].help_text = "Letters, numbers, dots, dashes and underscores. It's part of your site address and can't be changed."
+
+    def clean_email(self):
+        return clean_new_email(self.cleaned_data.get("email"))
 
     def clean_username(self):
         username = super().clean_username()
@@ -25,9 +48,12 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("full_name", "location", "bio", "website", "github", "linkedin", "bluesky", "mastodon", "threads", "show_related_posts")
-        labels = {"full_name": "Full name", "bio": "Bio", "github": "GitHub", "linkedin": "LinkedIn", "show_related_posts": "Show related posts at the end of my posts"}
+        fields = ("site_title", "tagline", "about_md", "full_name", "location", "bio", "website", "github", "linkedin", "bluesky", "mastodon", "threads", "show_related_posts")
+        labels = {"site_title": "Site title", "tagline": "Tagline", "about_md": "About (shown on your home page)", "full_name": "Full name", "bio": "Bio", "github": "GitHub", "linkedin": "LinkedIn", "show_related_posts": "Show related posts at the end of my posts"}
         widgets = {
+            "site_title": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "My corner of the internet"}),
+            "tagline": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "Notes on code, coffee and other things"}),
+            "about_md": forms.Textarea(attrs={"rows": 8, "maxlength": 5000, "spellcheck": "true"}),
             "full_name": forms.TextInput(attrs={"autocomplete": "name", "placeholder": "Ada Lovelace"}),
             "location": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "London, UK"}),
             "bio": forms.Textarea(attrs={"rows": 3, "maxlength": 300, "placeholder": "A sentence or two about you and what you write."}),
@@ -58,6 +84,15 @@ class ProfileForm(forms.ModelForm):
             if self.instance.pk and getattr(self.instance, name):
                 # Show what they'd recognise (the handle), not the stored URL.
                 self.initial[name] = social.handle_for(name, getattr(self.instance, name))
+
+    def clean_site_title(self):
+        return validate_plain_text(self.cleaned_data["site_title"]).strip()
+
+    def clean_tagline(self):
+        return validate_plain_text(self.cleaned_data["tagline"]).strip()
+
+    def clean_about_md(self):
+        return validate_plain_text(self.cleaned_data["about_md"], allow_newlines=True).strip()
 
     def clean_full_name(self):
         return validate_plain_text(self.cleaned_data["full_name"])
@@ -124,11 +159,30 @@ class OnboardingSiteForm(ProfileForm):
             "bio": forms.Textarea(attrs={"rows": 3, "maxlength": 300, "placeholder": "A sentence or two about you and what you write."}),
         }
 
-    def clean_site_title(self):
-        return validate_plain_text(self.cleaned_data["site_title"]).strip()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only offered to people who have no address yet; it never overwrites one.
+        self.offers_email = bool(self.instance.pk) and not self.instance.email
+        if self.offers_email:
+            self.fields["email"] = forms.EmailField(
+                required=False,
+                label=EMAIL_OPTIONAL_LABEL,
+                help_text="Without a confirmed email we can't reset your password. It stays private.",
+                widget=forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@example.com"}),
+            )
 
-    def clean_tagline(self):
-        return validate_plain_text(self.cleaned_data["tagline"]).strip()
+    def clean_email(self):
+        return clean_new_email(self.cleaned_data.get("email"), self.instance.pk)
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        email = self.cleaned_data.get("email", "") if self.offers_email else ""
+        if email:
+            user.email, user.email_verified = email, False
+        self.new_email = bool(email)
+        if commit:
+            user.save()
+        return user
 
 
 class EmailForm(forms.ModelForm):
@@ -139,10 +193,7 @@ class EmailForm(forms.ModelForm):
         help_texts = {"email": "Private. Never shown on your profile. Used for password resets."}
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip()
-        if email and User.objects.filter(email__iexact=email, email_verified=True).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("That email is already verified on another account.")
-        return email
+        return clean_new_email(self.cleaned_data["email"], self.instance.pk)
 
 
 class VerifiedEmailPasswordResetForm(PasswordResetForm):
@@ -153,11 +204,8 @@ class VerifiedEmailPasswordResetForm(PasswordResetForm):
 
 
 class ThemeForm(forms.Form):
-    """Site text plus the constrained theme knobs. Works as a plain POST; every value is validated by accounts.themes."""
+    """The constrained theme knobs (site title, tagline and About live in the Profile form). Works as a plain POST; every value is validated by accounts.themes."""
 
-    site_title = forms.CharField(required=False, max_length=80, widget=forms.TextInput(attrs={"placeholder": "My corner of the internet"}))
-    tagline = forms.CharField(required=False, max_length=140, widget=forms.TextInput(attrs={"placeholder": "Notes on code, coffee and other things"}))
-    about_md = forms.CharField(required=False, max_length=5000, label="About (home page)", widget=forms.Textarea(attrs={"rows": 8, "maxlength": 5000, "spellcheck": "true"}))
     preset = forms.ChoiceField(required=False, choices=[*themes.PRESET_CHOICES], widget=forms.RadioSelect)
 
     color_bg = forms.CharField(label=themes.COLOR_LABELS["bg"], max_length=7)
@@ -191,7 +239,6 @@ class ThemeForm(forms.Form):
         super().__init__(*args, **kwargs)
         if not self.is_bound:
             self.set_initial(themes.resolve(user).theme)
-            self.initial.update(site_title=user.site_title, tagline=user.tagline, about_md=user.about_md)
         for name in ("color_bg", "color_surface", "color_text", "color_muted", "color_accent", "bg_color2"):
             self.fields[name].widget = forms.TextInput(attrs={"type": "color"})
         self.fields["bg_angle"].widget = forms.NumberInput(attrs={"type": "range", "min": 0, "max": 360, "step": 5})
@@ -211,15 +258,6 @@ class ThemeForm(forms.Form):
     @property
     def current_image(self):
         return self.user.theme.get("bg", {}).get("image", "") if isinstance(self.user.theme, dict) else ""
-
-    def clean_site_title(self):
-        return validate_plain_text(self.cleaned_data["site_title"])
-
-    def clean_tagline(self):
-        return validate_plain_text(self.cleaned_data["tagline"])
-
-    def clean_about_md(self):
-        return validate_plain_text(self.cleaned_data["about_md"], allow_newlines=True)
 
     def clean(self):
         data = super().clean()
@@ -267,9 +305,7 @@ class ThemeForm(forms.Form):
         """Store the validated theme; drop the replaced background image if nothing else needs it."""
         user, old = self.user, self.current_image
         user.theme = self.theme
-        for name in ("site_title", "tagline", "about_md"):
-            setattr(user, name, self.cleaned_data[name].strip())
-        user.save(update_fields=["theme", "site_title", "tagline", "about_md"])
+        user.save(update_fields=["theme"])
         if old and old != self.theme["bg"]["image"]:
             _delete_unreferenced_image(user, old)
         return user

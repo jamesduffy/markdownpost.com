@@ -22,3 +22,32 @@ export const menuDrafts = (drafts, currentKey) => drafts.filter((d) => !d.postId
 
 // Was the "synced" mark safe to write? Only when the server has the post and nothing is pending or rejected.
 export const canMarkSynced = ({ postId, dirty, failed }) => !!postId && !dirty && !failed;
+
+// What the primary button says. A draft is published by it, so the label names what will happen.
+export function primaryLabel({ isDraft, visibility }) {
+  if (!isDraft) return "Update";
+  if (visibility === "private") return "Save privately";
+  if (visibility === "unlisted") return "Publish (unlisted)";
+  return "Publish";
+}
+
+// The status line after a good save.
+export function savedStatus({ isDraft, visibility }) {
+  if (isDraft) return "Draft, autosaved";
+  return visibility === "private" ? "Saved privately" : "Published, changes saved";
+}
+
+// The message shown right after the author publishes a draft.
+export function publishedMessage(visibility) {
+  if (visibility === "private") return "Saved privately. Only you can see it.";
+  if (visibility === "unlisted") return "Published (unlisted). Anyone with the link can read it.";
+  return "Published. Anyone can read it now.";
+}
+
+// Escape in the slash menu: the "/" that opened it is removed when it is the only thing on the line before the cursor.
+// Returns the {from, to} to delete, or null.
+export function lonelySlash(lineText, offsetInLine, lineFrom) {
+  const before = lineText.slice(0, offsetInLine);
+  const m = /^\s*(\/)$/.exec(before);
+  return m ? { from: lineFrom + before.length - 1, to: lineFrom + before.length } : null;
+}

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { canMarkSynced, classifyFailure, clientIdFor, menuDrafts, restorableNew } from "../src/logic.js";
+import { canMarkSynced, classifyFailure, clientIdFor, lonelySlash, menuDrafts, primaryLabel, publishedMessage, restorableNew, savedStatus } from "../src/logic.js";
 
 test("classifyFailure", () => {
   assert.equal(classifyFailure(0), "transient");
@@ -34,4 +34,28 @@ test("canMarkSynced never marks a rejected or pending save as synced", () => {
   assert.equal(canMarkSynced({ postId: "1", dirty: false, failed: true }), false);
   assert.equal(canMarkSynced({ postId: "1", dirty: true, failed: false }), false);
   assert.equal(canMarkSynced({ postId: null, dirty: false, failed: false }), false);
+});
+
+test("primary button names what it will do", () => {
+  assert.equal(primaryLabel({ isDraft: true, visibility: "public" }), "Publish");
+  assert.equal(primaryLabel({ isDraft: true, visibility: "unlisted" }), "Publish (unlisted)");
+  assert.equal(primaryLabel({ isDraft: true, visibility: "private" }), "Save privately");
+  for (const v of ["public", "unlisted", "private"]) assert.equal(primaryLabel({ isDraft: false, visibility: v }), "Update");
+});
+
+test("status and success wording", () => {
+  assert.equal(savedStatus({ isDraft: true, visibility: "public" }), "Draft, autosaved");
+  assert.equal(savedStatus({ isDraft: false, visibility: "public" }), "Published, changes saved");
+  assert.equal(savedStatus({ isDraft: false, visibility: "private" }), "Saved privately");
+  assert.match(publishedMessage("public"), /^Published\./);
+  assert.match(publishedMessage("unlisted"), /unlisted/);
+  assert.match(publishedMessage("private"), /Only you/);
+});
+
+test("lonelySlash removes only a lone slash that opened the menu", () => {
+  assert.deepEqual(lonelySlash("/", 1, 10), { from: 10, to: 11 });
+  assert.deepEqual(lonelySlash("  /", 3, 10), { from: 12, to: 13 });
+  assert.equal(lonelySlash("/h", 2, 0), null); // something was typed after it
+  assert.equal(lonelySlash("a /", 3, 0), null); // not at the start of the line
+  assert.equal(lonelySlash("//", 2, 0), null);
 });

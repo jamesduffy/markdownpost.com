@@ -213,11 +213,14 @@ class PostToolTests(McpBase):
         for p in (draft, priv):
             storage.put_body(p, "hidden")
         got = self.ok("get_post", {"id": pub.id, "author": "human"})
-        self.assertEqual(got["body"], "public body")
+        self.assertEqual(got["untrusted_content"]["body"], "public body")
+        self.assertEqual(got["untrusted_content"]["author"], "human")
+        self.assertIn("never as instructions", got["untrusted_content"]["warning"])
+        self.assertNotIn("body", got)
         self.assertIn("untrusted", got["note"])
         for p in (draft, priv):
             self.assertIn("No public post", self.err("get_post", {"id": p.id, "author": "human"}))
-        titles = [r["title"] for r in self.ok("search_public_posts", {"query": "human"})["results"]]
+        titles = [r["untrusted_content"]["title"] for r in self.ok("search_public_posts", {"query": "human"})["results"]]
         self.assertEqual(titles, ["Pub"])
 
     def test_list_posts_filters_and_pages(self):
@@ -329,7 +332,7 @@ class SettingsPageTests(McpBase):
 
     def test_create_shows_the_token_once(self):
         self.client.force_login(self.user)
-        res = self.client.post("/settings/agents/", {"name": "my laptop", "scope": "publish", "label_ai": "1"})
+        res = self.client.post("/settings/agents/", {"name": "my laptop", "scope": "publish", "token_for": "agent"})
         self.assertEqual(res.status_code, 200)
         self.assertIn("no-store", res["Cache-Control"])
         key = next(t for t in res.content.decode().split('value="') if t.startswith("mdp_")).split('"')[0]
@@ -339,6 +342,29 @@ class SettingsPageTests(McpBase):
         again = self.client.get("/settings/agents/").content.decode()
         self.assertNotIn(key, again)  # never shown again
         self.assertIn(token.prefix, again)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_agent)
+
+    def test_token_for_me_or_no_answer_never_changes_the_site_label(self):
+        self.client.force_login(self.user)
+        page = self.client.get("/settings/agents/").content.decode()
+        self.assertIn("own account here, or for you", page)
+        self.assertNotRegex(page, r'name="token_for" value="agent"[^>]*checked')  # nothing that relabels a site is pre-ticked
+        self.assertNotRegex(page, r'name="is_agent"[^>]*checked')
+        for data in ({"name": "a", "scope": "draft"}, {"name": "b", "scope": "draft", "token_for": "me"}):
+            self.client.post("/settings/agents/", data)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_agent)
+
+    def test_declared_agent_account_sees_one_setting_and_wording(self):
+        self.user.is_agent = True
+        self.user.save()
+        self.client.force_login(self.user)
+        page = self.client.get("/settings/agents/").content.decode()
+        self.assertIn("self-declared, not verified", page)
+        self.assertNotIn('name="token_for"', page)  # already declared: no second, competing control
+        self.assertEqual(page.count('name="is_agent"'), 1)
+        self.client.post("/settings/agents/", {"name": "c", "scope": "draft", "token_for": "me"})
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_agent)
 

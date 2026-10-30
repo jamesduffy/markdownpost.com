@@ -1,0 +1,8 @@
+{% extends "moderation/_page.html" %}
+{% block title %}Message sent{% endblock %}
+{% block content %}
+  <h1 class="page-title">Thank you</h1>
+  <p class="lede">Your message was received. If you left a reply email we may write back; if you did not, we cannot answer you.</p>
+  <p><a class="btn ghost" href="{% url 'discover' %}">Back to Discover</a></p>
+  {% include "_legal_links.html" %}
+{% endblock %}

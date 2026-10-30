@@ -3,7 +3,12 @@
 {% block title %}Offline{% endblock %}
 {# User-neutral on purpose: this page is cached by the service worker and shown to whoever uses the browser next. #}
 {% block header %}
-  <div class="dock"><a class="dock-btn" href="/" aria-label="MarkdownPost home" title="Home"><span aria-hidden="true">M↓</span></a></div>
+  <div class="dock" data-dock>
+    <a class="dock-btn" href="/" title="MarkdownPost home">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+      <span class="dock-btn-text">Home</span>
+    </a>
+  </div>
 {% endblock %}
 {% block content %}
   <h1 class="page-title">You're offline</h1>

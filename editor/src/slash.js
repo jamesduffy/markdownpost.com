@@ -1,4 +1,7 @@
-import { autocompletion } from "@codemirror/autocomplete";
+import { autocompletion, closeCompletion, completionStatus } from "@codemirror/autocomplete";
+import { Prec } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
+import { lonelySlash } from "./logic.js";
 
 // Typing "/" at the start of a line opens a block menu, like Dropbox Paper.
 export function slashMenu(pickImage) {
@@ -27,7 +30,25 @@ export function slashMenu(pickImage) {
     { label: "/image", detail: "Upload image", apply: (view, _c, from, to) => { view.dispatch({ changes: { from, to } }); pickImage(view); } },
   ];
 
-  return autocompletion({
+  // Escape closes the menu and also removes the "/" that opened it (when nothing else was typed), so no stray "/" is left in the post.
+  const escapeKey = Prec.highest(
+    keymap.of([
+      {
+        key: "Escape",
+        run: (view) => {
+          if (completionStatus(view.state) !== "active") return false;
+          const head = view.state.selection.main.head;
+          const line = view.state.doc.lineAt(head);
+          const span = view.state.selection.main.empty && lonelySlash(line.text, head - line.from, line.from);
+          closeCompletion(view);
+          if (span) view.dispatch({ changes: span, userEvent: "delete" });
+          return true;
+        },
+      },
+    ]),
+  );
+
+  return [escapeKey, autocompletion({
     icons: false,
     activateOnTyping: true,
     override: [
@@ -38,5 +59,5 @@ export function slashMenu(pickImage) {
         return { from: line.from + before.indexOf("/"), options, validFor: /^\/\w*$/ };
       },
     ],
-  });
+  })];
 }
