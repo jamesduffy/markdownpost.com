@@ -21,10 +21,8 @@ class RawUrlTests(TestCase):
         self.assertTrue(res["Content-Type"].startswith("text/plain"))
         self.assertEqual(res["X-Robots-Tag"], "noindex")
 
-    def test_old_raw_address_redirects_permanently(self):
-        res = self.client.get(f"/@raw_author/{self.post.id}/raw/")
-        self.assertEqual(res.status_code, 301)
-        self.assertEqual(res["Location"], f"/@raw_author/{self.post.id}.md")
+    def test_old_raw_address_is_gone(self):
+        self.assertEqual(self.client.get(f"/@raw_author/{self.post.id}/raw/").status_code, 404)
 
     def test_the_site_links_to_the_new_address(self):
         self.assertEqual(self.post.raw_url, f"/@raw_author/{self.post.id}.md")

@@ -172,11 +172,6 @@ def helpful_unmark(request, username, post_id):
     return response
 
 
-def post_raw_legacy(request, username, post_id):
-    """/@user/<id>/raw/ moved to /@user/<id>.md; old links keep working."""
-    return redirect(reverse("post_raw", args=[username, post_id]), permanent=True)
-
-
 def post_raw(request, username, post_id):
     post = _visible_post(request, username, post_id)
     try:

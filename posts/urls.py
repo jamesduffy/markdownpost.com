@@ -25,7 +25,6 @@ urlpatterns = [
     path("@<safe:username>/<safe:post_id>/", views.post_detail, name="post_detail"),
     path("@<safe:username>/<safe:post_id>/edit/", views.edit_post, name="edit_post"),
     path("@<safe:username>/<safe:post_id>.md", views.post_raw, name="post_raw"),
-    path("@<safe:username>/<safe:post_id>/raw/", views.post_raw_legacy, name="post_raw_legacy"),  # the old address, kept for existing links
     path("@<safe:username>/<safe:post_id>/helpful/", views.helpful_mark, name="helpful_mark"),
     path("@<safe:username>/<safe:post_id>/helpful/undo/", views.helpful_unmark, name="helpful_unmark"),
     path("@<safe:username>/<safe:post_id>/draft/", views.draft_post, name="draft_post"),
