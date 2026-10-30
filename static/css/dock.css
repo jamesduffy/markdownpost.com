@@ -75,3 +75,5 @@ html { scroll-padding-top: calc(max(12px, env(safe-area-inset-top)) + 64px); }
 /* The "unsynced draft" banner sits in flow at the very top: keep its text clear of the button. */
 .draft-banner.pending { padding-right: 120px; }
 @media (prefers-reduced-motion: reduce) { .dock-btn { transition: none; } .dock-details[open] .dock-menu { animation: none; } }
+.dock-menu .dock-home { margin-bottom: 4px; }
+.dock-menu a[aria-current="page"] { background: #e3e6ec; font-weight: 700; }

@@ -130,3 +130,20 @@ class DockTests(TestCase):
         css = (STATIC / "css/dock.css").read_text()
         self.assertNotIn("--t-", css)
         self.assertNotIn("var(", css)
+
+
+@override_settings(DEBUG=False, ALLOWED_HOSTS=["testserver"], SECURE_SSL_REDIRECT=False)
+class HomeLinkTests(TestCase):
+    def test_menu_links_home_for_everyone_and_marks_the_current_page(self):
+        anon = self.client.get("/discover/")
+        self.assertContains(anon, 'class="dock-home" href="/">')
+        self.assertNotContains(anon, 'class="dock-home" href="/" aria-current="page"')
+        self.assertContains(self.client.get("/"), 'class="dock-home" href="/" aria-current="page"')
+        get_user_model().objects.create_user("homer", password="a-long-pass-123")
+        self.client.login(username="homer", password="a-long-pass-123")
+        self.assertContains(self.client.get("/drafts/"), 'class="dock-home" href="/">')
+
+    def test_home_comes_first_in_the_signed_out_menu(self):
+        html = self.client.get("/discover/").content.decode()
+        menu = html[html.index('aria-label="Site menu"'):]
+        self.assertLess(menu.index("dock-home"), menu.index("Sign in"))
