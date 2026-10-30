@@ -9,7 +9,7 @@ RUN npm run build -- /out
 
 # --- stage 2: Django app ---
 FROM python:3.13-slim
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 LOCAL_STORAGE_PATH=/data/storage
 WORKDIR /app
 ARG INSTALL_DEV=0
 COPY requirements.txt requirements-dev.txt ./

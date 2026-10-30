@@ -11,6 +11,7 @@ When a change is finished and verified (this applies to **every** change, not ju
 3. **Publish:** `git push origin main`. GitHub Actions (`.github/workflows/docker.yml`) runs the tests, then builds and pushes `ghcr.io/jamesduffy/markdownpost.com:latest` (and `:<short-sha>`). Wait for the run to succeed (`gh run watch`).
 4. **Refresh Portainer:** in the `markdownpost` stack (web editor stack on the `local` environment), open the Editor, make the stack's compose match `deploy/docker-compose.yml` if that file changed, then **Update the stack with "Re-pull image and redeploy" ticked**. Do not remove or re-enter the stack's environment variables.
 5. **Verify** the deployment: `GET /health/` on the site must return `status: ok` and a `version` equal to the commit just pushed. Say what you verified.
+   Also check that content survives a redeploy: fetch a public post's raw markdown (`/@marginalia/<id>.md`) and confirm it is not empty. (An empty body means the storage path is not on the volume; `LOCAL_STORAGE_PATH` must be `/data/storage`.)
 
 Skip step 4 only when the commit changes nothing the image or the compose file contains (for example a docs-only change); say that you skipped it.
 Host addresses and the Portainer URL are in `CLAUDE.local.md` (not committed).
