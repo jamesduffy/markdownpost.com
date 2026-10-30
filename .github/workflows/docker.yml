@@ -82,6 +82,7 @@ jobs:
           # Pull requests only build amd64 (arm64 under emulation is slow); real publishes cover both.
           platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: GIT_SHA=${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }} # includes org.opencontainers.image.source, which links the package to this repo
           cache-from: type=gha,scope=build
           cache-to: type=gha,scope=build,mode=max

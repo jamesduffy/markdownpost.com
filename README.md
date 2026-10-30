@@ -12,7 +12,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(50))"   # use for SECRET
 docker compose up --build
 ```
 
-Open http://localhost:8000. Compose starts Postgres (and RustFS if `COMPOSE_PROFILES=rustfs`), runs the one-shot `migrate` service, then starts `web` (gunicorn, 3 workers, healthchecked on `/offline/`). Migrations run once in `migrate`, not on web boot, so scaled replicas cannot race.
+Open http://localhost:8000. Compose starts Postgres (and RustFS if `COMPOSE_PROFILES=rustfs`), runs the one-shot `migrate` service, then starts `web` (gunicorn, 3 workers, healthchecked on `/health/`). Migrations run once in `migrate`, not on web boot, so scaled replicas cannot race.
 
 Create an admin user (the Django admin lives at `/admin/`, and its login is rate limited like the normal one):
 
@@ -181,7 +181,7 @@ Then:
 
 1. Open the `web` container's *Console* in Portainer (command `sh`) and run `python manage.py createsuperuser` to create your admin login for `/admin/`.
 2. Visit `https://www.markdownpost.com`.
-3. To test the app directly on your LAN, the app only answers to its real hostname and expects to be behind HTTPS, so pretend to be the proxy: `curl -H "Host: www.markdownpost.com" -H "X-Forwarded-Proto: https" http://10.10.10.59:2255/offline/` should return `200`. (A plain `http://10.10.10.59:2255` in a browser gets "400 Bad Request" by design.)
+3. To test the app directly on your LAN, the app only answers to its real hostname and expects to be behind HTTPS, so pretend to be the proxy: `curl -H "Host: www.markdownpost.com" -H "X-Forwarded-Proto: https" http://10.10.10.59:2255/health/` should return `200` and `{"status": "ok", "version": "<git commit>"}`; the version tells you which image is actually running. (A plain `http://10.10.10.59:2255` in a browser gets "400 Bad Request" by design.)
 
 Portainer's menus are named slightly differently between versions; the compose file itself does not depend on any of it, it just reads `${VARIABLES}`.
 

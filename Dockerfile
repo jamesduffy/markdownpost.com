@@ -23,6 +23,9 @@ RUN SECRET_KEY=build python manage.py collectstatic --noinput \
     && chmod +x /app/docker-entrypoint.sh \
     && useradd --create-home app \
     && mkdir -p /data/storage && chown -R app /app /data
+# The commit this image was built from; shown by /health/ so you can tell which version is running.
+ARG GIT_SHA=dev
+ENV GIT_SHA=$GIT_SHA
 USER app
 EXPOSE 8000
 # With RUN_MIGRATIONS=1 (set in deploy/docker-compose.yml) the entrypoint migrates the database before gunicorn starts.

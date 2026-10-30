@@ -75,9 +75,9 @@ services:
     volumes:
       - storage:/data/storage
     healthcheck:
-      # Any non-5xx answer from /offline/ means gunicorn and Django are up (a 400 from
+      # Any non-5xx answer from /health/ means gunicorn and Django are up (a 400 from
       # ALLOWED_HOSTS not listing 127.0.0.1, or a 301 from an HTTPS redirect, still counts).
-      test: ["CMD", "python", "-c", "import http.client as h; c=h.HTTPConnection('127.0.0.1',8000,timeout=3); c.request('GET','/offline/'); raise SystemExit(c.getresponse().status>=500)"]
+      test: ["CMD", "python", "-c", "import http.client as h; c=h.HTTPConnection('127.0.0.1',8000,timeout=3); c.request('GET','/health/'); raise SystemExit(c.getresponse().status>=500)"]
       interval: 30s
       timeout: 5s
       start_period: 20s
