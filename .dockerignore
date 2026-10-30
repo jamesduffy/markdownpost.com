@@ -8,7 +8,6 @@ static/dist
 editor/node_modules
 editor/tests
 .github
-deploy
 **/.env
 **/.env.*
 .claude
