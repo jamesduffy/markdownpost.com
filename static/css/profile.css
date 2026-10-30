@@ -10,6 +10,8 @@
 a.chip { color: var(--fg); }
 a.chip b { font-weight: 600; color: var(--muted); }
 a.chip:hover { text-decoration: none; border-color: var(--accent); }
+.follow-row { margin: 16px 0 0; }
+.follow-form { display: inline; margin: 0; }
 .owner-links { margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .about { margin: 0 0 40px; }
 .about .prose { margin-top: 0; }
