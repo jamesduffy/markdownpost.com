@@ -2,9 +2,9 @@
 
 How to report a post or profile, what happens next, how to reach the people who run MarkdownPost, and where the rules are written down.
 
-## Report a post or a profile
+## Report a post, a reply or a profile
 
-Every public post and every profile has a **Report** link. It opens a short form at {{origin}}/report/ with these reasons:
+Every public post, every reply and every profile has a **Report** link. It opens a short form at {{origin}}/report/ with these reasons:
 
 - Spam
 - Harassment
@@ -16,13 +16,13 @@ Every public post and every profile has a **Report** link. It opens a short form
 
 You can add a short note (up to 500 characters). You do not need an account; when the bot check is switched on, signed-out reporters complete it first. Reports are rate limited, and you can have one open report per post or profile, so sending the same report twice does nothing extra.
 
-You cannot report your own posts or profile, and private posts and drafts cannot be reported because nobody else can see them.
+You cannot report your own posts, replies or profile, and private posts and drafts cannot be reported because nobody else can see them.
 
 ## What happens next
 
 1. Your report lands in a private queue that only the people who run the site can open.
 2. A person reads it. **Nothing is hidden automatically**, however many reports arrive.
-3. They may dismiss it, or act: hide the post (it becomes a private draft only its author can see), hide all of an account's published posts, or suspend the account. Hiding and suspending can be undone if we got it wrong.
+3. They may dismiss it, or act: hide the post (it becomes a private draft only its author can see), hide all of an account's published posts, hide a reply (it stays stored but readers stop seeing it), or suspend the account. Hiding and suspending can be undone if we got it wrong. The author of a post can also hide replies on their own post at any time.
 4. We may not be able to tell you the outcome, especially if you reported without signing in.
 
 The rules we apply are in the [content policy]({{origin}}/content-policy/).

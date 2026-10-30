@@ -9,6 +9,7 @@ class Report(models.Model):
     class TargetType(models.TextChoices):
         POST = "post", "Post"
         USER = "user", "Profile"
+        REPLY = "reply", "Reply"
 
     class Reason(models.TextChoices):
         SPAM = "spam", "Spam"
@@ -28,7 +29,7 @@ class Report(models.Model):
     OPEN = (Status.NEW, Status.REVIEWING)
 
     target_type = models.CharField(max_length=8, choices=TargetType.choices)
-    # Post id, or the profile's username. Snapshots, so the report still makes sense after the target is deleted or renamed.
+    # Post id, reply id, or the profile's username. Snapshots, so the report still makes sense after the target is deleted or renamed.
     target_id = models.CharField(max_length=64)
     target_label = models.CharField(max_length=220, blank=True, help_text="Post title or @username at the time of the report.")
     target_owner = models.CharField(max_length=150, blank=True, help_text="Username of the author (posts) or of the profile.")

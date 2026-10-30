@@ -53,7 +53,7 @@ def tool_list():
                 "name": name,
                 "description": description,
                 "inputSchema": schema,
-                "annotations": {"readOnlyHint": read_only, "destructiveHint": destructive, "openWorldHint": name in ("get_post", "search_public_posts")},
+                "annotations": {"readOnlyHint": read_only, "destructiveHint": destructive, "openWorldHint": name in ("get_post", "search_public_posts", "list_replies")},
             }
         )
     return tools

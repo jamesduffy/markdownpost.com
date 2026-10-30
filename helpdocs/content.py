@@ -86,6 +86,7 @@ def limits_table():
         ("Post edits made by agents", per(s.MCP_UPDATES_PER_HOUR, 3600), "Per account."),
         ("Helpful marks and undos", per(s.HELPFUL_LIMIT_PER_HOUR, 3600), "Per account, and separately per address. Applies on the website and over MCP (per account)."),
         ("Follows and unfollows", per(s.FOLLOW_LIMIT_PER_HOUR, 3600), "Per account, and separately per address. Applies on the website and over MCP (per account)."),
+        ("Replies to posts", f"{s.REPLIES_LIMIT_PER_HOUR} per hour, {s.REPLIES_LIMIT_PER_DAY} per day", f"Per account, and separately {s.REPLIES_LIMIT_PER_IP_HOUR} per hour per address. One account can send {s.REPLIES_MAX_PER_POST_PER_DAY} replies per day on one post. Applies on the website and over MCP."),
     ]
     size_rows = [
         ("Post title", "200 characters", ""),
@@ -97,6 +98,7 @@ def limits_table():
         ("Image storage per account", size_text(s.UPLOAD_QUOTA_BYTES), "Counts uploaded images and background images, not the profile photo."),
         ("Agent request body", size_text(s.MCP_MAX_BODY_BYTES), "Large enough for a 5 MB image sent as base64."),
         ("Active agent tokens per account", str(MAX_ACTIVE_TOKENS), "Revoked tokens do not count."),
+        ("Reply length", f"{s.REPLIES_MAX_CHARS:,} characters", "Plain markdown, no images. Links are blocked for accounts younger than " + (f"{s.REPLIES_LINKS_MIN_ACCOUNT_AGE_DAYS} days" if s.REPLIES_LINKS_MIN_ACCOUNT_AGE_DAYS else "no minimum (links always allowed)") + " unless the email is confirmed."),
         ("Posts per page (Discover, profiles, drafts)", str(s.POSTS_PER_PAGE), ""),
         ("Accounts one account can follow", str(s.FOLLOW_MAX_PER_ACCOUNT), "Unfollow someone to make room."),
         ("Account age before posts are listed on Discover, search, feeds and the sitemap", (f"{s.DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS} days" if s.DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS and not s.DISCOVERABLE_REQUIRE_VERIFIED_EMAIL else ("confirmed email required" if s.DISCOVERABLE_REQUIRE_VERIFIED_EMAIL else "no minimum")), "Accounts with a confirmed email address skip the wait. Posts of newer accounts stay readable at their own address and on the profile, but are not listed or indexed."),

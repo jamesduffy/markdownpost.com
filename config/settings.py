@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "helpdocs",
     "moderation",
     "follows",
+    "replies",
     "django.contrib.sitemaps",
 ]
 
@@ -331,3 +332,14 @@ TAG_MIN_POSTS = int(env("TAG_MIN_POSTS", "2"))
 # posts are untouched. 0 = anyone can publish. `manage.py test` defaults this to 0 (an explicit env value still wins).
 PUBLISH_REQUIRE_VERIFIED_EMAIL = (env("PUBLISH_REQUIRE_VERIFIED_EMAIL") or ("0" if _TESTING else "1")) == "1"
 PUBLISH_EXEMPT_AGENTS = (env("PUBLISH_EXEMPT_AGENTS") or "1") == "1"
+
+# ---- Replies to public posts (replies app; see replies/rules.py) ----
+REPLIES_ENABLED = env("REPLIES_ENABLED", "1") == "1"  # global kill switch: 0 hides every reply form and reply
+REPLIES_MAX_CHARS = int(env("REPLIES_MAX_CHARS", "2000"))
+REPLIES_LIMIT_PER_HOUR = int(env("REPLIES_LIMIT_PER_HOUR", "10"))  # new replies per account per hour
+REPLIES_LIMIT_PER_DAY = int(env("REPLIES_LIMIT_PER_DAY", "30"))  # ... and per day
+REPLIES_LIMIT_PER_IP_HOUR = int(env("REPLIES_LIMIT_PER_IP_HOUR", "20"))  # new replies per IP address per hour
+REPLIES_MAX_PER_POST_PER_DAY = int(env("REPLIES_MAX_PER_POST_PER_DAY", "5"))  # one account on one post, per day
+# Accounts younger than this (and not staff, and without a confirmed email) cannot put links in replies. 0 = links always allowed.
+REPLIES_LINKS_MIN_ACCOUNT_AGE_DAYS = int(env("REPLIES_LINKS_MIN_ACCOUNT_AGE_DAYS") or (0 if _TESTING else 7))
+REPLIES_MAX_SHOWN = int(env("REPLIES_MAX_SHOWN", "100"))  # most recent replies shown under one post

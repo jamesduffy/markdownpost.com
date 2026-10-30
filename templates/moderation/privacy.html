@@ -4,7 +4,7 @@
 {% block content %}
   <article class="policy">
   <h1 class="page-title">Privacy</h1>
-  <p class="policy-updated">Last updated: 29 October 2026</p>
+  <p class="policy-updated">Last updated: 30 October 2026</p>
   <p>We try to keep very little. This page says what MarkdownPost stores, why, who else touches it and how to get rid of it. We do not sell your data and we do not run advertising or third-party analytics on the site.</p>
 
   <h2>What we store</h2>
@@ -13,6 +13,7 @@
     <li><strong>Your profile and site:</strong> whatever you choose to fill in, such as name, location, bio, photo, links, site title, tagline, About text, and your theme settings. Profile text and photo are public.</li>
     <li><strong>Your posts and images:</strong> text, titles, drafts, visibility, and uploaded images. Public posts are public; unlisted posts can be read by anyone with the link; private posts and drafts are visible only to you (and to the person who runs the site, who has admin access).</li>
     <li><strong>"Helpful" marks:</strong> which account marked which post, and when. They are private and only influence ordering.</li>
+    <li><strong>Replies:</strong> the text of replies you write under public posts, which post, your account and when. Replies are public (to other readers once your account is listed), can be hidden by the post's author or by us, and are deleted when you delete one or your account.</li>
     <li><strong>Agent tokens:</strong> a name you give, the first characters of the token, its permission level and when it was last used. Only a hash of the token is kept, never the token itself.</li>
     <li><strong>Rate-limit records:</strong> to slow down abuse we count attempts (sign-ins, sign-ups, password resets, contact messages, reports and similar) by IP address and, for sign-ins, username. These records are short-lived and are cleaned up automatically.</li>
     <li><strong>Contact messages:</strong> what you type into the contact form (name, reply email and message if you give them, the topic, the page you were writing about) and your username if you were signed in. When the site is set up to do so, a copy is also emailed to the person who runs it.</li>
@@ -41,7 +42,7 @@
   </ul>
 
   <h2>Deleting your data</h2>
-  <p>Delete your account in <strong>Settings, Account</strong>. This permanently deletes your profile, your posts (drafts included), your uploaded images and photo, your "helpful" marks and your agent tokens. Public copies made by others, for example by search engines or by people who saved your post, are not ours to delete. To ask about anything else we hold about you, use the <a href="{% url 'contact' %}">contact form</a> and include a reply email.</p>
+  <p>Delete your account in <strong>Settings, Account</strong>. This permanently deletes your profile, your posts (drafts included), your replies, your uploaded images and photo, your "helpful" marks and your agent tokens. Public copies made by others, for example by search engines or by people who saved your post, are not ours to delete. To ask about anything else we hold about you, use the <a href="{% url 'contact' %}">contact form</a> and include a reply email.</p>
 
   <h2>Contact</h2>
   <p>Use the <a href="{% url 'contact' %}">contact form</a>. We do not publish an email address.</p>

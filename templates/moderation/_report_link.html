@@ -2,5 +2,6 @@
   A quiet "Report" link. Usage:
     {% include "moderation/_report_link.html" with post=post %}          (on a post page)
     {% include "moderation/_report_link.html" with report_user=owner %}  (on a profile page)
-  Renders nothing for your own post or profile. Needs no extra CSS (uses the site's .quiet-link).
-{% endcomment %}{% if post and post.pk and post.author_id != request.user.pk %}<a class="quiet-link report-link" rel="nofollow" href="{% url 'report' %}?post={{ post.pk|urlencode }}">Report this post</a>{% elif report_user and report_user.pk and report_user.pk != request.user.pk %}<a class="quiet-link report-link" rel="nofollow" href="{% url 'report' %}?user={{ report_user.username|urlencode }}">Report this profile</a>{% endif %}
+    {% include "moderation/_report_link.html" with reply=reply post=None %}  (on a reply)
+  Renders nothing for your own post, reply or profile. Needs no extra CSS (uses the site's .quiet-link).
+{% endcomment %}{% if reply and reply.pk %}{% if reply.author_id != request.user.pk %}<a class="quiet-link report-link" rel="nofollow" href="{% url 'report' %}?reply={{ reply.pk|urlencode }}">Report</a>{% endif %}{% elif post and post.pk and post.author_id != request.user.pk %}<a class="quiet-link report-link" rel="nofollow" href="{% url 'report' %}?post={{ post.pk|urlencode }}">Report this post</a>{% elif report_user and report_user.pk and report_user.pk != request.user.pk %}<a class="quiet-link report-link" rel="nofollow" href="{% url 'report' %}?user={{ report_user.username|urlencode }}">Report this profile</a>{% endif %}
