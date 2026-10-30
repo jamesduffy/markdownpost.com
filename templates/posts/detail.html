@@ -24,7 +24,7 @@
 {% endblock %}
 {% block theme_head %}{% theme_head %}{% endblock %}
 {% block body_attrs %}{% theme_attrs post.author %}{% endblock %}
-{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}">{% if seo.feed_url %}<link rel="alternate" type="application/atom+xml" title="{{ seo.feed_title }}" href="{{ seo.feed_url }}">{% endif %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/post.css' %}">{% if seo.feed_url %}<link rel="alternate" type="application/atom+xml" title="{{ seo.feed_title }}" href="{{ seo.feed_url }}">{% endif %}{% if seo.markdown_url %}<link rel="alternate" type="text/markdown" href="{{ seo.markdown_url }}">{% endif %}{% endblock %}
 {% block main_class %}reader-page{% endblock %}
 
 {% block content %}

@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 from django.templatetags.static import static
 from django.urls import reverse
 
+from . import cards
 from .discovery import user_is_discoverable
 
 SITE_NAME = "MarkdownPost"
@@ -57,8 +58,12 @@ def post_seo(request, post, doc):
     url = _abs(request, post.get_absolute_url())
     profile_url = _abs(request, reverse("profile", args=[author.username]))
     body_image = first_site_image(request, getattr(doc, "html", ""))
+    listed = public and discoverable
     if body_image:
         image, card = body_image, "summary_large_image"
+    elif listed:
+        # No picture in the post: a generated title card (see posts/cards.py), only for posts that may be indexed.
+        image, card = _abs(request, cards.card_url(post)), "summary_large_image"
     else:
         image, card = _avatar_or_icon(request, author), "summary"
     out = {
@@ -76,6 +81,7 @@ def post_seo(request, post, doc):
         "site_name": SITE_NAME,
         "feed_url": _abs(request, reverse("feed_author", args=[author.username])) if discoverable else "",
         "feed_title": f"{author.site_title or author.display_name} (Atom feed)",
+        "markdown_url": _abs(request, post.raw_url) if listed else "",
         "jsonld": "",
     }
     if public and discoverable:

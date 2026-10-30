@@ -100,6 +100,8 @@ class PagesTests(TestCase):
         links = re.findall(r"\]\((http://testserver(/[^)]+))\)", text)
         self.assertGreaterEqual(len(links), len(PAGES) + 1)
         for _url, path in links:
+            if path == "/mcp/":  # the agent endpoint answers GET with its own status (it needs a token)
+                continue
             self.assertEqual(self.client.get(path).status_code, 200, path)
         for p in PAGES:
             self.assertIn(f"(http://testserver/help/{p.slug}.md)", text)

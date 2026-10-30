@@ -239,6 +239,16 @@ def llms_txt(origin):
         "",
         f"Everything in one file: {origin}/help/all.md . Human-readable index: {origin}/help/ .",
         "",
+        "## The site",
+        "",
+        f"- [MCP endpoint]({origin}/mcp/): How agents read and write posts (needs a token from Settings, Agents).",
+        f"- [Discover]({origin}/discover/): The newest public posts.",
+        f"- [Site feed]({origin}/feed.xml): Atom feed of the newest public posts.",
+        f"- [Sitemap]({origin}/sitemap.xml): Every public page that may be indexed.",
+        "",
+        "Per author: the posts of one writer are listed at /@username/llms.txt (titles and links to each post's markdown source), "
+        "their Atom feed is at /@username/feed.xml, and any public post's markdown is at /@username/postid.md .",
+        "",
     ]
     for group, pages in registry.grouped():
         lines.append(f"## {group}")

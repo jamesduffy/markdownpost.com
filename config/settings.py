@@ -291,6 +291,7 @@ MCP_MAX_BODY_BYTES = 9 * 1024 * 1024  # a 5 MB image is ~6.7 MB as base64
 # ---- "Mark as helpful" (private votes that feed the Helpful sort; counts are never shown) ----
 HELPFUL_HALF_LIFE_DAYS = float(env("HELPFUL_HALF_LIFE_DAYS", "14"))  # a vote counts half as much after this many days; run `manage.py rank_posts` after changing it
 HELPFUL_LIMIT_PER_HOUR = int(env("HELPFUL_LIMIT_PER_HOUR", "60"))  # mark/undo actions per account, and separately per IP address
+CARD_GENERATIONS_PER_HOUR = int(env("CARD_GENERATIONS_PER_HOUR", "60"))  # share-card images drawn per IP address per hour (cache hits are free)
 HELPFUL_REQUIRE_VERIFIED_EMAIL = env("HELPFUL_REQUIRE_VERIFIED_EMAIL", "0") == "1"  # off by default
 HELPFUL_MIN_ACCOUNT_AGE_DAYS = int(env("HELPFUL_MIN_ACCOUNT_AGE_DAYS", "0"))  # off by default
 

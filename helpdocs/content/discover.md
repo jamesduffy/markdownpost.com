@@ -38,7 +38,7 @@ Profiles also show the photo, site title, tagline, location, join date, links an
 
 ## Post pages
 
-A post page shows the title, author, reading time and date, plus tools for readers: copy link, share (where the device offers it), reading font and size, a table of contents for longer posts, a reading-progress bar, and a link to the raw markdown. Public and unlisted posts also include sharing information (a title, description and address) so links look good when pasted into chat or social sites.
+A post page shows the title, author, reading time and date, plus tools for readers: copy link, share (where the device offers it), reading font and size, a table of contents for longer posts, a reading-progress bar, and a link to the raw markdown. Public and unlisted posts also include sharing information (a title, description and address) so links look good when pasted into chat or social sites. A public, listed post that has no image of its own gets a generated 1200 by 630 preview card (title, author and your theme's colors) as its share image; posts with an image use that image.
 
 ## Finding posts without the website
 

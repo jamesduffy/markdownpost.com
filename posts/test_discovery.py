@@ -329,12 +329,17 @@ class ShareCardTests(Base):
         post = make_post(self.old, body="![x](https://evil.example/x.png)")
         html = self.client.get(post.get_absolute_url()).content.decode()
         self.assertNotIn("evil.example/x.png\">", html.split("</head>")[0])
+        # no usable image in the post: the generated title card (posts/cards.py) is the share image
+        self.assertEqual(self.meta(html, "twitter:card", "name"), "summary_large_image")
+        self.assertIn(f"/@oldtimer/{post.pk}/card.png?v=", self.meta(html, "og:image"))
+        unlisted = make_post(self.old, visibility="unlisted")
+        html = self.client.get(unlisted.get_absolute_url()).content.decode()
         self.assertEqual(self.meta(html, "twitter:card", "name"), "summary")
         self.assertTrue(self.meta(html, "og:image").endswith("/static/icons/icon-512.png"))
 
     def test_avatar_fallback(self):
         User.objects.filter(pk=self.old.pk).update(avatar_key="avatars/1-abcdef012345.webp")
-        post = make_post(self.old)
+        post = make_post(self.old, visibility="unlisted")  # listed posts get a generated card instead
         html = self.client.get(post.get_absolute_url()).content.decode()
         self.assertEqual(self.meta(html, "og:image"), "http://testserver/media/avatars/1-abcdef012345.webp")
         self.assertEqual(self.meta(html, "twitter:card", "name"), "summary")
