@@ -1,7 +1,7 @@
 """Hand-written notes for each MCP tool: what it returns, what can go wrong. The tool names, descriptions and
 argument tables are generated from agents.tools.TOOLS; a test fails if a tool exists there without notes here."""
 
-POST_SHAPE = "`id`, `title`, `url` (absolute), `visibility`, `is_draft`, `updated` (ISO 8601 timestamp), `excerpt`"
+POST_SHAPE = "`id`, `title`, `url` (absolute), `visibility`, `is_draft`, `publish_at` (ISO 8601 UTC time the draft is scheduled to publish, or `null`), `updated` (ISO 8601 timestamp), `excerpt`"
 
 NOTES = {
     "whoami": {
@@ -82,8 +82,12 @@ NOTES = {
             "`Post is too large` (the body limit is 500,000 bytes)",
             "`Add a title or some text before saving.` (publishing an empty post)",
             "`Post creation limit reached (N per hour). ...`",
+            "`publish_at must be an ISO 8601 time with a UTC offset, ...` / `publish_at must be in the future.` / `publish_at can be at most N days ahead.`",
+            "`Pass publish_at (schedule for later) or publish=true (now), not both.`",
+            "`Confirm your email address to publish. ...` (code `email_not_confirmed`) when you schedule and the account's email is not confirmed: the post is saved as an unscheduled draft",
         ],
         "notes": [
+            "`publish_at` schedules the post: it stays a draft that only you can see, and the site publishes it at that time with the `visibility` you set. It needs a token that can publish and the same email rule as publishing now. The time must include a UTC offset (for example `2026-12-01T09:00:00Z` or `2026-12-01T09:00:00+01:00`), be in the future and at most a year ahead; seconds are dropped.",
             "Without `publish: true` the post is a draft that only you can see. `visibility` is stored and takes effect when the post is published.",
             "`visibility` defaults to `public`.",
             "The retry check runs before the rate-limit check, so retrying a `client_id` that already worked never costs budget.",
@@ -94,7 +98,8 @@ NOTES = {
         "returns": f"The updated post summary ({POST_SHAPE}).",
         "errors": [
             "`No post with that id on your site.`",
-            "`Nothing to change: pass title, body, visibility or publish.`",
+            "`Nothing to change: pass title, body, visibility, publish or publish_at.`",
+            "`publish_at ...` errors as for `create_post`; `Only drafts can be scheduled. Move the post to drafts first.` (use `publish: false` together with `publish_at`)",
             "`The post changed since you read it (now updated ...). Call get_post again and merge your changes.`",
             "`Invalid base timestamp` (`expected_updated` is not a timestamp)",
             "`This token can only write drafts. ...`",
@@ -105,6 +110,8 @@ NOTES = {
             "Send only the fields that change. Leave out `body` and the body is untouched.",
             "`publish: true` publishes a draft. `publish: false` moves a published post back to drafts and needs only a write token.",
             "`expected_updated` must equal the post's current `updated` exactly, or the edit is refused.",
+            "`publish_at` schedules a draft (needs a token that can publish); `publish_at: null` cancels the schedule (a write token is enough). Editing a scheduled post keeps its schedule. `publish: true` publishes now and clears it.",
+            "Every change to the title or body keeps the previous text in the post's version history (at most one snapshot a minute), so the account owner can restore it from the website. There is no tool to read or restore versions.",
         ],
     },
     "upload_image": {

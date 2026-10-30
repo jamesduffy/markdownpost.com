@@ -71,6 +71,9 @@ x-app: &app
     MCP_REQUESTS_PER_MINUTE:
     MCP_POSTS_PER_HOUR:
     MCP_UPDATES_PER_HOUR:
+    POST_VERSIONS_KEEP:
+    POST_VERSION_MIN_INTERVAL_SECONDS:
+    SCHEDULE_MAX_DAYS:
     HELPFUL_HALF_LIFE_DAYS:
     HELPFUL_LIMIT_PER_HOUR:
     HELPFUL_REQUIRE_VERIFIED_EMAIL:
@@ -106,6 +109,16 @@ services:
       retries: 3
     depends_on:
       db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Publishes scheduled posts (the editor's Schedule menu, MCP publish_at) when their time comes, checking every minute.
+  # Pages also publish due posts when opened, so a stopped scheduler delays rather than loses them.
+  scheduler:
+    <<: *app
+    command: ["python", "manage.py", "publish_scheduled", "--every", "60"]
+    depends_on:
+      web:
         condition: service_healthy
     restart: unless-stopped
 

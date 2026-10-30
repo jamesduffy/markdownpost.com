@@ -31,7 +31,7 @@
   <div class="read-progress" aria-hidden="true"><i></i></div>
 
   {% if post.is_draft and is_owner %}
-    <div class="draft-banner pending">This is a draft, only you can see it. <a href="{{ post.edit_url }}">Keep writing and save it to publish</a></div>
+    <div class="draft-banner pending">{% if post.publish_at %}Scheduled for <time class="local-time" datetime="{{ post.publish_at|date:'c' }}">{{ post.publish_at|date:"Y-m-d H:i" }} UTC</time>; until then only you can see it.{% else %}This is a draft, only you can see it.{% endif %} <a href="{{ post.edit_url }}">{% if post.publish_at %}Edit or reschedule{% else %}Keep writing and save it to publish{% endif %}</a></div>
   {% endif %}
 
   <div class="reader {% if doc.toc|length > 1 %}has-toc{% endif %}">
@@ -99,6 +99,7 @@
               <summary class="act" aria-label="More actions" title="More"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></summary>
               <div class="menu-pop">
                 <a href="{{ post.raw_url }}">View raw markdown</a>
+                {% if is_owner %}<a href="{{ post.history_url }}">Version history</a>{% endif %}
                 {% if is_owner and not post.is_draft %}
                   <form method="post" action="{{ post.draft_url }}">{% csrf_token %}<button type="submit">Move back to drafts</button></form>
                 {% endif %}

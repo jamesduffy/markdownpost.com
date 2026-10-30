@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.urls import reverse
+from django.utils import timezone
 
 
 def new_post_id():
@@ -44,6 +45,9 @@ class Post(models.Model):
     # Ranking key for the "Helpful" sort (see posts/ranking.py): log of the time-decayed sum of votes, NULL = no votes.
     # Not a count. Never show it to anyone or put it in any output.
     helpful_rank = models.FloatField(null=True, blank=True, db_index=True, editable=False)
+    # Scheduled publication (UTC, whole minutes). Only ever set on a draft: the post stays a draft, invisible everywhere,
+    # until posts/scheduling.publish_due flips it. `visibility` is the visibility it will have once published.
+    publish_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -92,6 +96,14 @@ class Post(models.Model):
         return self.visibility != self.Visibility.PRIVATE or is_author
 
     @property
+    def is_scheduled(self):
+        return self.is_draft and self.publish_at is not None
+
+    @property
+    def history_url(self):
+        return self._url("post_history")
+
+    @property
     def draft_url(self):
         return self._url("draft_post")
 
@@ -99,6 +111,47 @@ class Post(models.Model):
 @receiver(post_delete, sender=Post)
 def delete_body_from_storage(sender, instance, **kwargs):
     """Covers every way a post can disappear (admin, bulk delete, deleting its author), not just our own view."""
+    from . import storage
+
+    try:
+        storage.get_storage().delete(instance.body_key)
+    except storage.StorageError:
+        pass
+
+
+class PostVersion(models.Model):
+    """A prior title + body of a post, kept so the author can look back and restore (see posts/versions.py).
+
+    The title lives here; the body lives in object storage next to the post body (posts/<post>/v/<id>.md) so the
+    database stays small and every storage backend works. Rows and objects are deleted with the post. Only the
+    author ever sees them."""
+
+    class Source(models.TextChoices):
+        EDIT = "edit", "Edit"  # the state an edit (web, API or MCP) replaced
+        RESTORE = "restore", "Before restore"  # the state a restore replaced
+
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="versions")
+    title = models.CharField(max_length=200, blank=True)
+    size = models.PositiveIntegerField(default=0)  # body bytes
+    digest = models.CharField(max_length=64)  # sha256 of title + body, to skip identical snapshots
+    source = models.CharField(max_length=10, choices=Source.choices, default=Source.EDIT)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        indexes = [models.Index(fields=["post", "-created_at"])]
+
+    def __str__(self):
+        return f"{self.post_id} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def body_key(self):
+        return f"posts/{self.post_id}/v/{self.pk}.md"
+
+
+@receiver(post_delete, sender=PostVersion)
+def delete_version_body(sender, instance, **kwargs):
+    """Pruning, deleting the post, deleting the account: every path that removes a version removes its object."""
     from . import storage
 
     try:

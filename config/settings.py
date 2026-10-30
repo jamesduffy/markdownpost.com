@@ -166,6 +166,13 @@ UPLOAD_QUOTA_BYTES = int(os.environ.get("UPLOAD_QUOTA_BYTES", 100 * 1024 * 1024)
 UPLOAD_RATE_LIMIT = int(os.environ.get("UPLOAD_RATE_LIMIT", 30))  # uploads per user per hour
 POSTS_PER_PAGE = 20
 
+# Version history (posts/versions.py): how many prior versions to keep per post (0 turns history off), and the least
+# time between two automatic snapshots of one post, so autosave while typing does not fill the history.
+POST_VERSIONS_KEEP = int(env("POST_VERSIONS_KEEP") or "20")
+POST_VERSION_MIN_INTERVAL_SECONDS = int(env("POST_VERSION_MIN_INTERVAL_SECONDS") or "60")
+# Scheduled posts (posts/scheduling.py): the furthest ahead a post can be scheduled.
+SCHEDULE_MAX_DAYS = int(env("SCHEDULE_MAX_DAYS") or "366")
+
 # Django Debug Toolbar: only when DEBUG=1 and the dev requirements are installed.
 if DEBUG:
     try:

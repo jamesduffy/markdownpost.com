@@ -7,6 +7,7 @@ import { createDraftStore } from "./drafts.js";
 import { createUploader } from "./images.js";
 import { livePreview } from "./livepreview.js";
 import { canMarkSynced, classifyFailure, clientIdFor, menuDrafts, primaryLabel, publishedMessage, restorableNew, savedStatus } from "./logic.js";
+import { createScheduler } from "./schedule.js";
 import { slashMenu } from "./slash.js";
 import { createToolbar } from "./toolbar.js";
 
@@ -32,6 +33,16 @@ let failure = null; // message of the last 4xx the server rejected this content 
 let unconfirmed = false; // the server refused to publish because the email isn't confirmed (the text is saved as a draft)
 let createMaybeSent = false; // a create request got no answer: it may exist server-side (retries reuse client_id)
 let warnedStorage = false;
+// The Schedule menu: picks a time in the writer's own zone; the server stores UTC and keeps the post a draft until then.
+const scheduler = createScheduler({
+  root,
+  onChange: () => {
+    publishRequested = false; // scheduling and publishing now are alternatives
+    updateButtons();
+    dirty = true;
+    flush();
+  },
+});
 
 // Read at request time: the CSRF cookie rotates on login, and an editor page served from the offline cache is older than that.
 const csrfToken = () => document.cookie.match(/(?:^|; )csrftoken=([^;]+)/)?.[1] || root.dataset.csrf;
@@ -97,6 +108,7 @@ async function flush() {
   if (isOffline()) return setStatus("Offline · kept on this device", true);
   if (postId && lastUpdated) payload.base = lastUpdated;
   if (publishRequested) payload.is_draft = false;
+  Object.assign(payload, scheduler.payload());
   saving = true;
   dirty = false;
   setStatus("Saving…");
@@ -114,6 +126,7 @@ async function flush() {
     if (res.status === 403 && data.code === "email_not_confirmed") {
       // The server kept the content as a draft but refused to publish it: adopt the saved post, then explain.
       adoptSaved(data);
+      scheduler.adopt(data.publish_at);
       publishRequested = false;
       setDraftState(data.is_draft !== false);
       if (data.visibility) visibilityEl.value = data.visibility;
@@ -128,6 +141,7 @@ async function flush() {
     unconfirmed = false;
     document.querySelector(".draft-banner.unconfirmed")?.remove();
     adoptSaved(data);
+    scheduler.adopt(data.publish_at);
     // A retried create may have been answered with the post from the lost first attempt (old content): follow up with a PUT.
     if (creating && createMaybeSent) dirty = true;
     createMaybeSent = false;
@@ -146,7 +160,7 @@ async function flush() {
     const status = err.status || 0;
     const kind = classifyFailure(status);
     if (kind === "transient" && creating) createMaybeSent = true;
-    if (kind === "rejected") failure = err.message;
+    if (kind === "rejected") (failure = err.message), scheduler.revert(), updateButtons();
     if (kind === "gone") return deletedElsewhere();
     saveLocal(false);
     if (kind === "auth") {
@@ -210,10 +224,10 @@ function deletedElsewhere() {
   ]);
 }
 
-const savedLabel = () => savedStatus({ isDraft, visibility: visibilityEl.value });
+const savedLabel = () => (isDraft && scheduler.active() ? `Scheduled for ${scheduler.label()}` : savedStatus({ isDraft, visibility: visibilityEl.value }));
 
 function updateButtons() {
-  doneEl.textContent = primaryLabel({ isDraft, visibility: visibilityEl.value });
+  doneEl.textContent = isDraft && scheduler.active() ? "Publish now" : primaryLabel({ isDraft, visibility: visibilityEl.value });
   // "←" goes back to the post once it is published, and to the drafts list while it is still a draft.
   if (backEl) {
     backEl.href = (isDraft ? "/drafts/" : viewUrl) || "/drafts/";
@@ -482,6 +496,7 @@ document.addEventListener("mousedown", (e) => {
 
 visibilityEl.addEventListener("change", () => (updateButtons(), schedule(), flush()));
 updateButtons();
+if (isDraft && scheduler.active()) setStatus(savedLabel());
 
 // Shown after a draft is published: says so plainly, with the link.
 function showPublished() {

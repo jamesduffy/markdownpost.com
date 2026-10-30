@@ -140,7 +140,7 @@ def _type_text(prop):
     t = prop.get("type", "any")
     if "enum" in prop:
         return " or ".join(f"`{v}`" for v in prop["enum"])
-    return t
+    return " or ".join(f"`{v}`" if v == "null" else v for v in t) if isinstance(t, list) else t
 
 
 def _arg_notes(prop):

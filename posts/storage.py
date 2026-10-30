@@ -175,3 +175,16 @@ def get_body(post):
 
 def put_body(post, body):
     get_storage().put(post.body_key, body.encode("utf-8"), "text/markdown; charset=utf-8")
+
+
+def get_version_body(version):
+    """The body a PostVersion kept. Unlike get_body, a missing object raises NotFound (the history page says so)."""
+    return get_storage().get(version.body_key)[0].decode("utf-8")
+
+
+def put_version_body(version, body):
+    get_storage().put(version.body_key, body.encode("utf-8"), "text/markdown; charset=utf-8")
+
+
+def delete_version_body(version):
+    get_storage().delete(version.body_key)

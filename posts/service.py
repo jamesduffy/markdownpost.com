@@ -1,12 +1,14 @@
 """Post validation and saving shared by the editor's JSON API and the MCP endpoint, so both enforce the same rules."""
 
 import re
+from datetime import timedelta, timezone as dt_timezone
 
 from django.conf import settings
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from . import storage
-from .models import Post
+from . import storage, versions
+from .models import Post, PostVersion
 from .render import clip, plain_text
 
 SEARCH_TEXT_CHARS = 20_000
@@ -37,6 +39,27 @@ def can_publish(user):
 
 def _visible(is_draft, visibility):
     return not is_draft and visibility != Post.Visibility.PRIVATE
+
+
+def clean_publish_at(value):
+    """None (clear the schedule) or an ISO 8601 timestamp WITH a UTC offset, returned as an aware UTC datetime cut to
+    the minute. Whether it lies in the future is checked when saving (apply_fields)."""
+    if value is None:
+        return None
+    parsed = parse_datetime(value) if isinstance(value, str) else None
+    if parsed is None or parsed.tzinfo is None:
+        raise ApiError("publish_at must be an ISO 8601 time with a UTC offset, e.g. 2026-12-01T09:00:00Z or 2026-12-01T09:00:00+01:00")
+    return parsed.astimezone(dt_timezone.utc).replace(second=0, microsecond=0)
+
+
+def _check_schedule(post, publish_at):
+    """Raise ApiError if `publish_at` is not allowed for this post right now."""
+    now = timezone.now()
+    if publish_at != post.publish_at:  # re-saving an unchanged schedule that has just come due is not an error
+        if publish_at <= now:
+            raise ApiError("publish_at must be in the future.")
+        if publish_at > now + timedelta(days=settings.SCHEDULE_MAX_DAYS):
+            raise ApiError(f"publish_at can be at most {settings.SCHEDULE_MAX_DAYS} days ahead.")
 
 
 def clean_fields(data):
@@ -74,6 +97,8 @@ def clean_fields(data):
         if data["visibility"] not in Post.Visibility.values:
             raise ApiError("Invalid visibility")
         fields["visibility"] = data["visibility"]
+    if "publish_at" in data:
+        fields["publish_at"] = clean_publish_at(data["publish_at"])
     if "body" in data:
         if not isinstance(data["body"], str) or len(data["body"].encode()) > settings.MAX_POST_BYTES:
             raise ApiError("Post is too large", 413)
@@ -81,9 +106,10 @@ def clean_fields(data):
     return fields
 
 
-def apply_fields(post, fields):
+def apply_fields(post, fields, version_source=PostVersion.Source.EDIT):
     """Save fields to the row and body. Call inside transaction.atomic(): the row is written first, then the
-    body, so a storage failure raises and rolls the row back, leaving both untouched."""
+    body, so a storage failure raises and rolls the row back, leaving both untouched. Before a title/body change the
+    old text is kept as a version (posts/versions.py)."""
     title = fields.get("title", post.title)
     # Publishing needs a confirmed email. A refused publish still saves everything, as a draft (or, for a post saved
     # privately, still private); callers check post.publish_refused after the transaction commits and report it.
@@ -97,21 +123,48 @@ def apply_fields(post, fields):
             fields["is_draft"] = True
         else:
             fields["visibility"] = post.visibility
-    if fields.get("is_draft") is False:
+    # Scheduling (publish_at): the post stays a draft until posts/scheduling.publish_due flips it. Scheduling is publishing
+    # in advance, so it needs the same permission; publishing now, or clearing, removes the schedule.
+    publish_at = fields.get("publish_at", post.publish_at)
+    if "publish_at" in fields and fields["publish_at"] is not None:
+        if fields.get("is_draft") is False:
+            raise ApiError("Publish now or schedule a time, not both.")
+        if not post._state.adding and not post.is_draft and fields.get("is_draft") is not True:
+            raise ApiError("Only drafts can be scheduled. Move the post to drafts first.")
+        _check_schedule(post, fields["publish_at"])
+        if now_visibility != Post.Visibility.PRIVATE and not can_publish(post.author):
+            post.publish_refused = True
+            fields = {k: v for k, v in fields.items() if k != "publish_at"}
+            publish_at = post.publish_at
+        else:
+            fields = dict(fields, is_draft=True)
+    scheduling = fields.get("publish_at") is not None
+    if fields.get("is_draft") is False or scheduling:
         if "body" in fields:
             body = fields["body"]
         else:
             body = storage.get_body(post) if not post._state.adding and not title else ""
         if not title.strip() and not body.strip():
-            raise ApiError("Add a title or some text before saving.")
+            raise ApiError("Add a title or some text before scheduling." if scheduling else "Add a title or some text before saving.")
     if "body" in fields:
         plain = plain_text(fields["body"])
         post.excerpt = clip(plain)
         post.search_text = plain[:SEARCH_TEXT_CHARS]
+    snap = None
+    if not post._state.adding and ("body" in fields or title != post.title):
+        snap = versions.snapshot(post, title, fields.get("body"), source=version_source, force=version_source == PostVersion.Source.RESTORE)
     for name in ("title", "visibility", "is_draft"):
         if name in fields:
             setattr(post, name, fields[name])
-    post.save()
-    if "body" in fields:
-        storage.put_body(post, fields["body"])
+    post.publish_at = None if fields.get("is_draft", post.is_draft) is False else publish_at
+    try:
+        post.save()
+        if "body" in fields:
+            storage.put_body(post, fields["body"])
+    except Exception:
+        if snap:
+            versions.discard(snap)
+        raise
+    if snap:
+        versions.prune(post)
     return post

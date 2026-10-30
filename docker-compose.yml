@@ -29,6 +29,9 @@ x-app-env: &app-env
   MCP_REQUESTS_PER_MINUTE: ${MCP_REQUESTS_PER_MINUTE:-120}
   MCP_POSTS_PER_HOUR: ${MCP_POSTS_PER_HOUR:-20}
   MCP_UPDATES_PER_HOUR: ${MCP_UPDATES_PER_HOUR:-200}
+  POST_VERSIONS_KEEP: ${POST_VERSIONS_KEEP:-20}
+  POST_VERSION_MIN_INTERVAL_SECONDS: ${POST_VERSION_MIN_INTERVAL_SECONDS:-60}
+  SCHEDULE_MAX_DAYS: ${SCHEDULE_MAX_DAYS:-366}
   HELPFUL_HALF_LIFE_DAYS: ${HELPFUL_HALF_LIFE_DAYS:-14}
   HELPFUL_LIMIT_PER_HOUR: ${HELPFUL_LIMIT_PER_HOUR:-60}
   HELPFUL_REQUIRE_VERIFIED_EMAIL: ${HELPFUL_REQUIRE_VERIFIED_EMAIL:-0}
@@ -118,6 +121,20 @@ services:
     environment: *app-env
     volumes:
       - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Publishes scheduled posts (the editor's Schedule menu, MCP publish_at) when their time comes, checking every minute.
+  # Pages also publish due posts when opened, so a stopped scheduler delays rather than loses them.
+  scheduler:
+    build: *app-build
+    image: markdownpost-app
+    command: ["python", "manage.py", "publish_scheduled", "--every", "60"]
+    environment: *app-env
     depends_on:
       db:
         condition: service_healthy

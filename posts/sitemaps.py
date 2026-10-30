@@ -7,6 +7,7 @@ from django.contrib.sitemaps import Sitemap
 from django.db.models import Max
 from django.urls import reverse
 
+from . import scheduling
 from .models import Post
 
 User = get_user_model()
@@ -17,6 +18,7 @@ class PostSitemap(Sitemap):
     protocol = None  # follow the request (https behind the proxy)
 
     def items(self):
+        scheduling.maybe_publish_due()
         return Post.objects.discoverable().select_related("author").order_by("-created_at", "-pk")
 
     def lastmod(self, post):

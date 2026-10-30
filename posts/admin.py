@@ -69,9 +69,9 @@ class PostAdmin(admin.ModelAdmin):
     list_per_page = 50
     inlines = (HelpfulInline,)
     actions = ("make_public", "make_unlisted", "make_private", "mark_draft")
-    readonly_fields = ("id", "created_at", "updated_at", "excerpt", "links", "body_preview")
+    readonly_fields = ("id", "created_at", "updated_at", "excerpt", "links", "body_preview", "publish_at")
     fieldsets = (
-        (None, {"fields": ("title", "author", "is_draft", "visibility")}),
+        (None, {"fields": ("title", "author", "is_draft", "visibility", "publish_at")}),
         ("Content", {"fields": ("excerpt", "body_preview", "links")}),
         ("Metadata", {"fields": ("id", "created_at", "updated_at")}),
     )
