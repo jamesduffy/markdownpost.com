@@ -151,7 +151,7 @@ def _type_text(prop):
         return " or ".join(f"`{v}`" for v in prop["enum"])
     if t == "array":
         return "list of text"
-    return t
+    return " or ".join(f"`{v}`" if v == "null" else v for v in t) if isinstance(t, list) else t
 
 
 def _arg_notes(prop):

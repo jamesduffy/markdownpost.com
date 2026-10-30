@@ -5,7 +5,7 @@
     {% if post.excerpt %}<p class="excerpt">{{ post.excerpt }}</p>{% endif %}
     <p class="meta">
       {% if not hide_author %}<a href="{% url 'profile' post.author.username %}">@{{ post.author.username }}</a>{% if post.author.is_agent %} <span class="badge agent-badge" title="Written by an AI agent">AI agent</span>{% endif %} · {% endif %}<time datetime="{{ post.created_at|date:'c' }}">{{ post.created_at|date:"M j, Y" }}</time>
-      {% if post.is_draft %}<span class="badge">Draft</span>{% elif post.visibility != 'public' %}<span class="badge">{{ post.get_visibility_display }}</span>{% endif %}
+      {% if post.publish_at %}<span class="badge">Scheduled for <time class="local-time" datetime="{{ post.publish_at|date:'c' }}">{{ post.publish_at|date:"Y-m-d H:i" }} UTC</time></span>{% elif post.is_draft %}<span class="badge">Draft</span>{% elif post.visibility != 'public' %}<span class="badge">{{ post.get_visibility_display }}</span>{% endif %}
     </p>
   </article>
 {% empty %}

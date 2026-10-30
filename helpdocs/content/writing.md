@@ -77,6 +77,8 @@ You never have to press Publish to keep your work: autosave keeps it as a draft.
 
 **New posts are drafts, and autosave never publishes them.** A draft is visible only to you and appears in no list except your own Drafts. To publish, press **Publish** (or **Publish (unlisted)**, or **Save privately** if the drop-down says Private): the post becomes live with the visibility you chose and a message appears at the top of the editor, for example "Published. Anyone can read it now." with **View post** and **Copy link**. If the post is already published, the button says **Update**, which takes you to the post; your edits are already live because they autosave into the published post.
 
+To publish at a set time instead, use **Schedule** next to the button; see [Publishing, drafts and visibility]({{origin}}/help/publishing/). Earlier versions of a post are kept; see **Version history** on the same page.
+
 Your drafts are in the **Drafts** menu at the top of the editor and on the Drafts page ({{origin}}/drafts/). To take a published post back to drafts, use the **⋯** menu on the post page and choose **Move back to drafts**.
 
 ## Editing in two places at once

@@ -1,0 +1,14 @@
+/* Version history list and diff (plain HTML, no scripts). */
+.version-row.current { border-top: 1px solid var(--border); }
+.diff, .version-text { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 0; overflow-x: auto; font-family: var(--mono); font-size: var(--scale-1); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; }
+.version-text { padding: 10px 12px; }
+.diff span { display: block; min-height: 1.5em; padding: 0 12px; }
+.diff-add { background: color-mix(in srgb, #2ea043 22%, transparent); }
+.diff-del { background: color-mix(in srgb, #d1242f 20%, transparent); }
+.diff-hunk { color: var(--muted); background: var(--surface); }
+.diff-title { font-size: var(--scale1); margin: 24px 0 4px; }
+.diff-title-line del { background: color-mix(in srgb, #d1242f 20%, transparent); }
+.diff-title-line ins { background: color-mix(in srgb, #2ea043 22%, transparent); text-decoration: none; }
+.version-full { margin: 20px 0; }
+.version-full summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.version-row form.inline { display: inline; }

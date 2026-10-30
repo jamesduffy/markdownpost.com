@@ -16,6 +16,7 @@ from django.db.models import F, Q
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -23,7 +24,7 @@ from uploads import service as uploads_service
 
 from accounts import ratelimit
 
-from . import helpful, seo, storage, tags
+from . import helpful, scheduling, seo, storage, tags
 from .models import Post, Tag
 from .service import CLIENT_ID_RE, EMAIL_NOT_CONFIRMED, PUBLISH_REFUSED_MESSAGE, ApiError, apply_fields, can_publish, clean_fields
 from .render import make_excerpt, render_document, render_document_cached
@@ -47,6 +48,7 @@ def _feed(request, tag=""):
     """Public, published posts, narrowed by ?q= (search), ?who= (AI agents / people) and ?tag= (or `tag`, a clean slug the
     caller already knows, as on a tag page). Newest first, or with
     ?sort=helpful by the stored helpful rank (no votes last), newest first among equals. Returns (posts, q, who, sort)."""
+    scheduling.maybe_publish_due()
     posts = Post.objects.discoverable().select_related("author")
     q = request.GET.get("q", "").replace("\x00", "").strip()[:100]
     if q:
@@ -113,6 +115,7 @@ def home(request):
 
 def profile(request, username):
     owner = get_object_or_404(User, username=username)
+    scheduling.maybe_publish_due()
     posts = owner.posts.all()
     if request.user != owner:
         posts = posts.filter(visibility=Post.Visibility.PUBLIC, is_draft=False)
@@ -122,6 +125,9 @@ def profile(request, username):
 
 def _visible_post(request, username, post_id):
     post = get_object_or_404(Post.objects.select_related("author"), pk=post_id, author__username=username)
+    if post.is_scheduled and post.publish_at <= timezone.now():
+        scheduling.publish_due(post_id=post.pk)  # its time has come and nothing has published it yet
+        post = get_object_or_404(Post.objects.select_related("author"), pk=post_id, author__username=username)
     if not post.can_view(request.user):
         raise Http404
     return post
@@ -254,7 +260,8 @@ def draft_post(request, username, post_id):
     """Move a saved post back to drafts (takes it off Discover and your profile)."""
     post = get_object_or_404(Post, pk=post_id, author=request.user, author__username=username)
     post.is_draft = True
-    post.save(update_fields=["is_draft", "updated_at"])
+    post.publish_at = None
+    post.save(update_fields=["is_draft", "publish_at", "updated_at"])
     return redirect("drafts")
 
 
@@ -313,6 +320,7 @@ def _post_json(post):
             "updated": post.updated_at.isoformat(),
             "is_draft": post.is_draft,
             "tags": post.tag_slugs,
+            "publish_at": post.publish_at.isoformat() if post.publish_at else None,
         },
         status=403 if refused else 200,
     )
@@ -366,6 +374,7 @@ def api_update(request, post_id):
                         "tags": post.tag_slugs,
                         "visibility": post.visibility,
                         "is_draft": post.is_draft,
+                        "publish_at": post.publish_at.isoformat() if post.publish_at else None,
                         "updated": post.updated_at.isoformat(),
                     },
                 },

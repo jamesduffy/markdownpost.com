@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{% if post %}{{ post.display_title }}{% else %}New post{% endif %}{% endblock %}
-{% block meta %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{% static 'css/editor-ux.css' %}">{% endblock %}
+{% block meta %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{% static 'css/editor-ux.css' %}"><link rel="stylesheet" href="{% static 'css/schedule.css' %}">{% endblock %}
 {% block header %}
   <header class="editor-bar">
     {% if post and not post.is_draft %}<a id="back" class="icon-btn" href="{{ post.get_absolute_url }}" aria-label="Back to the post">←</a>{% else %}<a id="back" class="icon-btn" href="{% url 'drafts' %}" aria-label="Back to your drafts">←</a>{% endif %}
@@ -19,6 +19,7 @@
           <p class="drafts-empty">No other drafts.</p>
         {% endfor %}
         <a class="drafts-all" href="{% url 'drafts' %}">All drafts{% if draft_count > 8 %} ({{ draft_count }}){% endif %}</a>
+        {% if post %}<a class="drafts-hist" href="{{ post.history_url }}">Version history</a>{% endif %}
         <a class="drafts-site" href="{% url 'profile' user.username %}">My site</a>
       </div>
     </details>
@@ -27,12 +28,25 @@
       <option value="unlisted"{% if post.visibility == 'unlisted' %} selected{% endif %}>Unlisted</option>
       <option value="private"{% if post.visibility == 'private' %} selected{% endif %}>Private</option>
     </select>
+    <details class="schedule-menu" id="schedule-menu">
+      <summary class="btn ghost small" aria-label="Schedule publication">Schedule</summary>
+      <div class="schedule-pop">
+        <label for="schedule-at">Publish at (your time)</label>
+        <input type="datetime-local" id="schedule-at" step="60">
+        <p class="hint" id="schedule-tz" aria-live="polite">Times are in your browser's time zone.</p>
+        <p class="hint">The post stays a draft, visible only to you, until then. It goes live with the visibility chosen next to this menu. Times are stored as UTC.</p>
+        <div class="schedule-actions">
+          <button type="button" class="btn small" id="schedule-set">Schedule</button>
+          <button type="button" class="btn ghost small" id="schedule-clear" hidden>Cancel schedule</button>
+        </div>
+      </div>
+    </details>
     <a id="done" class="btn" href="{% if post and not post.is_draft %}{{ post.get_absolute_url }}{% else %}{% url 'drafts' %}{% endif %}">{% if not post or post.is_draft %}Publish{% else %}Update{% endif %}</a>
   </header>
 {% endblock %}
 {% block main_class %}editor-page{% endblock %}
 {% block content %}
-  <div id="editor-root" data-post-id="{{ post.id|default:'' }}" data-view-url="{% if post %}{{ post.get_absolute_url }}{% endif %}" data-csrf="{{ csrf_token }}" data-user="{{ user.pk }}" data-draft="{% if not post or post.is_draft %}1{% endif %}" data-updated="{{ post.updated_at.isoformat|default:'' }}">
+  <div id="editor-root" data-post-id="{{ post.id|default:'' }}" data-view-url="{% if post %}{{ post.get_absolute_url }}{% endif %}" data-csrf="{{ csrf_token }}" data-user="{{ user.pk }}" data-draft="{% if not post or post.is_draft %}1{% endif %}" data-updated="{{ post.updated_at.isoformat|default:'' }}" data-publish-at="{% if post.is_draft %}{{ post.publish_at.isoformat|default:'' }}{% endif %}">
     <textarea id="title" rows="1" placeholder="Untitled" aria-label="Title" maxlength="200" autocomplete="off">{{ post.title }}</textarea>
     <div id="tags" class="tag-input">
       <ul class="tag-chips" aria-label="Tags"></ul>

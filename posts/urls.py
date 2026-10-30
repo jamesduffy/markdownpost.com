@@ -3,7 +3,7 @@ from django.views.decorators.cache import cache_control
 
 from django.contrib.sitemaps import views as sitemap_views
 
-from . import cards, feeds, llms, views, wellknown
+from . import cards, feeds, history_views, llms, views, wellknown
 from .sitemaps import SITEMAPS
 from .converters import SafeStringConverter
 
@@ -30,6 +30,9 @@ urlpatterns = [
     path("@<safe:username>/<safe:post_id>/edit/", views.edit_post, name="edit_post"),
     path("@<safe:username>/llms.txt", llms.author_llms_txt, name="author_llms_txt"),
     path("@<safe:username>/<safe:post_id>/card.png", cards.post_card, name="post_card"),
+    path("@<safe:username>/<safe:post_id>/history/", history_views.history, name="post_history"),
+    path("@<safe:username>/<safe:post_id>/history/<int:version_id>/", history_views.history_version, name="post_version"),
+    path("@<safe:username>/<safe:post_id>/history/<int:version_id>/restore/", history_views.history_restore, name="post_version_restore"),
     path("@<safe:username>/<safe:post_id>.md", views.post_raw, name="post_raw"),
     path("@<safe:username>/<safe:post_id>/helpful/", views.helpful_mark, name="helpful_mark"),
     path("@<safe:username>/<safe:post_id>/helpful/undo/", views.helpful_unmark, name="helpful_unmark"),

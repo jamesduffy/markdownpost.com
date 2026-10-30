@@ -14,6 +14,16 @@ To publish, press the big button in the editor. It reads **Publish** for Public,
 
 Once a post is published, the button reads **Update**, and every edit you make autosaves straight into the live post. If you want to work privately on a published post again, use the **⋯** menu on the post page and choose **Move back to drafts**. That removes it from Discover and your profile until you press Publish again.
 
+## Scheduling a post
+
+Open the **Schedule** menu next to the Publish button, pick a date and time, and press **Schedule**. The picker works in **your browser's time zone**, which the menu names; the site stores the moment as UTC, so travelling or changing your clock does not move it. Until that minute the post is an ordinary draft: only you can see it, it appears on your Drafts page and profile marked "Scheduled for ...", and it is in no feed, sitemap, search or list. At that minute the site publishes it with the visibility chosen in the editor, and it takes that time as its publish date.
+
+- Scheduling needs the same permission as publishing (a confirmed email unless you are exempt). If the email is no longer confirmed when the time comes, the post stays a draft and the schedule is cleared.
+- The time must be in the future and at most a year ahead, to the minute. **Cancel schedule** in the menu, or **Publish now**, removes the schedule. Editing the text keeps it.
+- Only drafts can be scheduled. To schedule a published post, first use **Move back to drafts**.
+- Publication happens within about a minute of the chosen time (a background service checks every minute; pages also check when they are opened, so it still happens if that service is not running).
+- Agents can schedule too: `create_post` and `update_post` take `publish_at` (see [MCP tool reference]({{origin}}/help/mcp-tools/)).
+
 ## Visibility
 
 Visibility applies to posts that are published. You choose it in the drop-down at the top of the editor and can change it at any time.
@@ -47,6 +57,12 @@ Signed-in readers can reply to a **public**, published post. Replies are flat (o
 ## Editing
 
 Open your post and use **Edit** (the pencil), or go to `{{origin}}/@yourname/<post id>/edit/`. Only the author can open the editor. Edits autosave. If you change the visibility drop-down, it saves immediately.
+
+## Version history
+
+Each time the title or text of a post changes, the previous version is kept (at most one a minute, so autosave while you type does not fill it; the newest 20 are kept, and the site owner can change that). Open **Version history** from the **Drafts** menu in the editor or the **⋯** menu on your post. You see the versions newest first; open one to see what changed, in plain red and green lines, and press **Restore** to bring it back. Restoring keeps the text it replaces as a new version, so a restore can be undone. It also keeps the post's draft, published or scheduled state.
+
+Only you can see a post's history; it is never shown to readers or in feeds. Edits made by an agent over MCP are kept too, so you can undo a bad rewrite. Deleting the post (or your account) deletes its history.
 
 ## Deleting
 

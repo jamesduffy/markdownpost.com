@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Version of {{ post.display_title }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{% static 'css/history.css' %}">{% endblock %}
+{% block content %}
+  <p class="meta"><a href="{% url 'post_history' post.author.username post.id %}">← History</a></p>
+  <h1 class="page-title">{{ version.title|default:"Untitled" }}</h1>
+  <p class="lede">Saved <time class="local-time" datetime="{{ version.created_at|date:'c' }}">{{ version.created_at|date:"Y-m-d H:i" }} UTC</time>{% if version.source == 'restore' %}, just before a restore{% endif %}. Only you can see this.</p>
+  {% if old is None %}
+    <p class="hint">This version's text is no longer available, so it can't be compared or restored.</p>
+  {% else %}
+    {% if same %}
+      <p class="hint">This version is identical to the current post.</p>
+    {% else %}
+      <form class="inline" method="post" action="{% url 'post_version_restore' post.author.username post.id version.pk %}" data-confirm="Restore this version? The current text is kept in the history.">{% csrf_token %}<button class="btn" type="submit">Restore this version</button></form>
+      {% if post.is_scheduled %}<p class="hint">Restoring keeps the schedule.</p>{% endif %}
+      <h2 class="diff-title">Changes since this version</h2>
+      <p class="hint">Red lines were in this version and are not in the current post. Green lines are new in the current post.</p>
+      {% if title_changed %}<p class="diff-title-line"><del>{{ version.title|default:"Untitled" }}</del> <ins>{{ post.display_title }}</ins></p>{% endif %}
+      {% if rows is None %}
+        <p class="hint">The text is too long to compare here. The full text of this version is below.</p>
+      {% elif rows %}
+        <pre class="diff" aria-label="Differences">{% for kind, text in rows %}<span class="diff-{{ kind }}">{% if kind == 'add' %}+ {% elif kind == 'del' %}- {% elif kind == 'ctx' %}  {% endif %}{{ text }}</span>{% endfor %}</pre>
+      {% else %}
+        <p class="hint">The text is the same; only the title differs.</p>
+      {% endif %}
+    {% endif %}
+    <details class="version-full">
+      <summary>Full text of this version</summary>
+      <pre class="version-text">{{ old }}</pre>
+    </details>
+  {% endif %}
+{% endblock %}

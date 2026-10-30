@@ -2,7 +2,7 @@
 {% block title %}Drafts{% endblock %}
 {% block content %}
   <h1 class="page-title">Drafts</h1>
-  <p class="lede">Posts you've started but haven't published yet. Only you can see them. Your writing is autosaved here; press <strong>Publish</strong> in the editor when a post is ready.</p>
+  <p class="lede">Posts you've started but haven't published yet. Only you can see them. Your writing is autosaved here; press <strong>Publish</strong> in the editor when a post is ready, or schedule it for later.</p>
   {% if publish_blocked %}<p class="hint">To publish, <a href="{% url 'settings_account' %}">confirm your email</a> first. Drafts and private posts work without it.</p>{% endif %}
   <p><a class="btn" href="{% url 'new_post' %}">New post</a></p>
   {% for post in page %}
@@ -10,6 +10,7 @@
       <h2><a href="{{ post.edit_url }}">{{ post.display_title }}</a></h2>
       {% if post.excerpt %}<p class="excerpt">{{ post.excerpt }}</p>{% endif %}
       <p class="meta">
+        {% if post.publish_at %}<span class="badge">Scheduled for <time class="local-time" datetime="{{ post.publish_at|date:'c' }}">{{ post.publish_at|date:"Y-m-d H:i" }} UTC</time></span> ·{% endif %}
         Edited {{ post.updated_at|timesince }} ago
         · <a href="{{ post.edit_url }}">Continue writing</a>
         · <form class="inline" method="post" action="{{ post.delete_url }}" data-confirm="Delete this draft permanently?">{% csrf_token %}<button class="link-btn danger" type="submit">Delete</button></form>

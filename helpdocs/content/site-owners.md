@@ -75,6 +75,8 @@ Rate limits and upload limits are environment variables: `LOGIN_LIMIT_PER_USER`,
 ## Housekeeping
 
 - **Uploaded images:** the `sweeper` service in Compose runs `sweep_uploads` every `SWEEP_INTERVAL_HOURS` (24), deleting images no post or theme uses and older than `SWEEP_MIN_AGE_HOURS` (24). Preview with `docker compose exec web python manage.py sweep_uploads --dry-run`. If you do not run the sweeper service, schedule the command yourself or orphaned images pile up.
+- **Scheduled posts:** the `scheduler` service in Compose runs `publish_scheduled --every 60`, publishing drafts whose `publish_at` has passed. Without it, scheduled posts are still published lazily when someone opens Discover, a profile, a feed or the post itself, but a quiet site could publish late. Run `python manage.py publish_scheduled` by hand to flush the queue.
+- **Version history:** `POST_VERSIONS_KEEP` (default 20, 0 turns history off) is how many earlier versions each post keeps; `POST_VERSION_MIN_INTERVAL_SECONDS` (60) is the least time between automatic snapshots; `SCHEDULE_MAX_DAYS` (366) is how far ahead a post can be scheduled. Version bodies are stored beside post bodies in object storage (`posts/<id>/v/<n>.md`), so back them up with them. Worst case per post is the keep count times the 500 KB post limit.
 - **Search index:** `python manage.py reindex_posts` rebuilds every post's searchable text from its stored body. Run it after upgrading from a version that did not have search text; it is safe to repeat.
 - **Rate-limit table:** old entries are cleaned up automatically.
 - **Migrations:** the web container applies pending migrations as it starts (under a database lock), so upgrading is "run the new image".

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}History: {{ post.display_title }}{% endblock %}
+{% block meta %}<meta name="robots" content="noindex"><link rel="stylesheet" href="{% static 'css/history.css' %}">{% endblock %}
+{% block content %}
+  <h1 class="page-title">History</h1>
+  <p class="lede">Earlier versions of <a href="{{ post.edit_url }}">{{ post.display_title }}</a>. Only you can see this. Each time the title or text changes, what was replaced is kept (at most once a minute; the newest {{ keep }} are kept).</p>
+  <article class="card version-row current">
+    <h2>Current version</h2>
+    <p class="meta">Edited <time class="local-time" datetime="{{ post.updated_at|date:'c' }}">{{ post.updated_at|date:"Y-m-d H:i" }} UTC</time> · <a href="{{ post.edit_url }}">Open in the editor</a></p>
+  </article>
+  {% for v in versions %}
+    <article class="card version-row">
+      <h2><a href="{% url 'post_version' post.author.username post.id v.pk %}">{{ v.title|default:"Untitled" }}</a></h2>
+      <p class="meta">
+        <time class="local-time" datetime="{{ v.created_at|date:'c' }}">{{ v.created_at|date:"Y-m-d H:i" }} UTC</time>
+        · {{ v.size|filesizeformat }}{% if v.source == 'restore' %} · saved before a restore{% endif %}
+        · <a href="{% url 'post_version' post.author.username post.id v.pk %}">Compare</a>
+        · <form class="inline" method="post" action="{% url 'post_version_restore' post.author.username post.id v.pk %}" data-confirm="Restore this version? The current text is kept in the history.">{% csrf_token %}<button class="link-btn" type="submit">Restore</button></form>
+      </p>
+    </article>
+  {% empty %}
+    <p class="empty">No earlier versions yet. They appear here after you change this post.</p>
+  {% endfor %}
+{% endblock %}

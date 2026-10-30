@@ -20,7 +20,7 @@ from django.views.decorators.http import require_safe
 
 from django.contrib.auth import get_user_model
 
-from . import storage, tags
+from . import scheduling, storage, tags
 from .models import Post, Tag
 from .render import render_document_cached
 
@@ -107,6 +107,7 @@ def _respond(request, posts, *, title, subtitle, link, feed_url, author_name=Non
 @require_safe
 def site_feed(request):
     origin = f"{request.scheme}://{request.get_host()}"
+    scheduling.maybe_publish_due()
     posts = Post.objects.discoverable().select_related("author").order_by("-created_at", "-pk")
     return _respond(
         request,
@@ -124,6 +125,7 @@ def author_feed(request, username):
     author = get_object_or_404(User, username=username)
     origin = f"{request.scheme}://{request.get_host()}"
     profile = origin + reverse("profile", args=[author.username])
+    scheduling.maybe_publish_due()
     posts = Post.objects.discoverable().filter(author=author).select_related("author").order_by("-created_at", "-pk")
     name = author.site_title or author.display_name
     return _respond(

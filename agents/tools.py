@@ -49,6 +49,7 @@ def _post_dict(ctx, post, body=False):
         "url": ctx.abs(post.get_absolute_url()),
         "visibility": post.visibility,
         "is_draft": post.is_draft,
+        "publish_at": post.publish_at.isoformat() if post.publish_at else None,
         "updated": post.updated_at.isoformat(),
         "excerpt": post.excerpt,
         "tags": post.tag_slugs,
@@ -309,6 +310,11 @@ def create_post(ctx, args):
     if publish:
         _need_publish(ctx)
     data["is_draft"] = not publish
+    if args.get("publish_at") is not None:
+        if publish:
+            raise ToolError("Pass publish_at (schedule for later) or publish=true (now), not both.")
+        _need_publish(ctx)
+        data["publish_at"] = args["publish_at"]
     fields = clean_fields(data)
     client_id = fields.pop("client_id", None)
     if client_id:
@@ -336,6 +342,13 @@ def update_post(ctx, args):
     _need_write(ctx)
     post_id = _str(args.get("id"), "id", 1, 16)
     data = {k: args[k] for k in ("title", "body", "visibility", "tags") if k in args}
+    if args.get("publish_at") is not None:
+        if args.get("publish"):
+            raise ToolError("Pass publish_at (schedule for later) or publish=true (now), not both.")
+        _need_publish(ctx)  # scheduling is publishing in advance; clearing a schedule (null) needs only write
+        data["publish_at"] = args["publish_at"]
+    elif "publish_at" in args:
+        data["publish_at"] = None
     if "publish" in args:
         if not isinstance(args["publish"], bool):
             raise ToolError("publish must be true or false.")
@@ -347,7 +360,7 @@ def update_post(ctx, args):
     fields = clean_fields(data)
     base = fields.pop("base", None)
     if not fields:
-        raise ToolError("Nothing to change: pass title, body, tags, visibility or publish.")
+        raise ToolError("Nothing to change: pass title, body, tags, visibility, publish or publish_at.")
     if ratelimit.is_limited("mcp-update", str(ctx.user.pk), settings.MCP_UPDATES_PER_HOUR, 3600):
         raise ToolError(f"Edit limit reached ({settings.MCP_UPDATES_PER_HOUR} per hour). Try again later.")
     with transaction.atomic():
@@ -592,6 +605,7 @@ _TAGS = {
     "description": "Up to 5 topic tags, for example python or machine-learning. Lowercased; letters a-z, numbers and hyphens, 2-30 characters. An empty list removes all tags. Public posts with tags appear on the tag pages.",
 }
 _VIS = {"type": "string", "enum": ["public", "unlisted", "private"], "description": "public = listed on Discover; unlisted = anyone with the link; private = only you."}
+_PUBLISH_AT = {"type": ["string", "null"], "description": "ISO 8601 time WITH a UTC offset, e.g. 2026-12-01T09:00:00Z. Must be in the future (at most a year ahead); rounded down to the minute. The post stays a draft until then. null cancels a schedule."}
 
 # name -> (function, description, input schema, read_only, destructive)
 TOOLS = {
@@ -686,9 +700,9 @@ TOOLS = {
     ),
     "create_post": (
         create_post,
-        "Create a post on your site. By default it is saved as a DRAFT that only you can see; set publish=true (needs a token that can publish) to make it live. The title is separate from the body. Pass a client_id (8-64 letters/digits/-/_) to make retries safe.",
+        "Create a post on your site. By default it is saved as a DRAFT that only you can see; set publish=true (needs a token that can publish) to make it live. The title is separate from the body. Pass publish_at (ISO 8601 with a UTC offset, in the future; needs a token that can publish) instead to keep it a draft until then and have the site publish it automatically. Pass a client_id (8-64 letters/digits/-/_) to make retries safe.",
         _schema(
-            {"title": {"type": "string", "maxLength": 200}, "body": {"type": "string", "description": "Markdown. See markdown_guide."}, "tags": _TAGS, "visibility": _VIS, "publish": {"type": "boolean", "default": False}, "client_id": {"type": "string"}},
+            {"title": {"type": "string", "maxLength": 200}, "body": {"type": "string", "description": "Markdown. See markdown_guide."}, "tags": _TAGS, "visibility": _VIS, "publish": {"type": "boolean", "default": False}, "publish_at": _PUBLISH_AT, "client_id": {"type": "string"}},
             ["body"],
         ),
         False,
@@ -696,9 +710,9 @@ TOOLS = {
     ),
     "update_post": (
         update_post,
-        "Change one of your posts. Pass only what changes. publish=true publishes a draft (needs a token that can publish); publish=false moves it back to drafts. Pass expected_updated (the `updated` value from get_post) to avoid overwriting someone else's edit.",
+        "Change one of your posts. Pass only what changes. publish=true publishes a draft (needs a token that can publish); publish=false moves it back to drafts. publish_at (ISO 8601 with a UTC offset, in the future; needs a token that can publish) schedules a draft to be published automatically at that time; publish_at=null cancels the schedule. Pass expected_updated (the `updated` value from get_post) to avoid overwriting someone else's edit.",
         _schema(
-            {"id": {"type": "string"}, "title": {"type": "string", "maxLength": 200}, "body": {"type": "string"}, "tags": _TAGS, "visibility": _VIS, "publish": {"type": "boolean"}, "expected_updated": {"type": "string"}},
+            {"id": {"type": "string"}, "title": {"type": "string", "maxLength": 200}, "body": {"type": "string"}, "tags": _TAGS, "visibility": _VIS, "publish": {"type": "boolean"}, "publish_at": _PUBLISH_AT, "expected_updated": {"type": "string"}},
             ["id"],
         ),
         False,
