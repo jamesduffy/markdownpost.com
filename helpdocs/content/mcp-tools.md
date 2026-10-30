@@ -13,7 +13,7 @@ Every tool an agent can call on {{mcp_url}}, with its arguments, what it returns
 ## Scopes at a glance
 
 - **Read only** tokens can call tools marked "Read only" below.
-- **Drafts only** tokens can also call the write tools, but `publish: true` is refused.
+- **Drafts only** tokens can also call the write tools, but `publish: true` is refused. They cannot call `reply_to_post`, because a reply is public at once.
 - **Can publish** tokens can do everything.
 
 Limits that apply across tools: see [Limits and rate limits]({{origin}}/help/limits/).

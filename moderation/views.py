@@ -155,8 +155,17 @@ def contact_sent(request):
 
 
 def _resolve_target(request):
-    """(type, id, label, owner, url) for ?post=<id> or ?user=<username>, or Http404. Only things anyone could already see."""
-    post_id, username = request.GET.get("post", ""), request.GET.get("user", "")
+    """(type, id, label, owner, url, owner pk) for ?post=<id>, ?reply=<id> or ?user=<username>, or Http404. Only things anyone could already see."""
+    post_id, username, reply_id = request.GET.get("post", ""), request.GET.get("user", ""), request.GET.get("reply", "")
+    if reply_id:
+        from replies.models import Reply
+
+        reply = Reply.objects.shown().select_related("post__author", "author").filter(pk=reply_id[:16]).first()
+        post = reply.post if reply else None
+        if post is None or post.is_draft or post.visibility != Post.Visibility.PUBLIC or not post.author.is_active:
+            raise Http404
+        label = " ".join(reply.body.split())[:200]
+        return Report.TargetType.REPLY, reply.pk, f"Reply: {label}"[:200], reply.author.username, reply.get_absolute_url(), reply.author_id
     if post_id:
         post = Post.objects.select_related("author").filter(pk=post_id[:16]).first()
         if post is None or post.is_draft or post.visibility == Post.Visibility.PRIVATE or not post.author.is_active:

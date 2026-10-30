@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static profile theme %}
+{% load static profile theme replies %}
 {% block title %}{{ post.display_title }}{% endblock %}
 {% block description %}{{ post.excerpt|default:"A post on MarkdownPost" }}{% endblock %}
 {% block meta %}
@@ -150,6 +150,7 @@
           <span class="byline-text"><small>Written by</small><strong>{{ post.author.display_name }}</strong></span>
         </a>
         <p class="report-row">{% include "moderation/_report_link.html" with post=post %}</p>
+        {% reply_section post %}
         {% if more %}
           <h2 class="more-title">More from @{{ post.author.username }}</h2>
           <div class="more-list">

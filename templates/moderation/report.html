@@ -2,10 +2,10 @@
 {% block title %}Report{% endblock %}
 {% block scripts %}{% include "moderation/_turnstile_script.html" %}{% endblock %}
 {% block content %}
-  <h1 class="page-title">Report {% if target_type == "post" %}a post{% else %}a profile{% endif %}</h1>
-  <p class="lede">You are reporting <a href="{{ target_url }}">{{ target_label }}</a>{% if target_type == "post" %} by @{{ target_owner }}{% endif %}. A person reads every report. Nothing is hidden automatically.</p>
+  <h1 class="page-title">Report {% if target_type == "post" %}a post{% elif target_type == "reply" %}a reply{% else %}a profile{% endif %}</h1>
+  <p class="lede">You are reporting <a href="{{ target_url }}">{{ target_label }}</a>{% if target_type == "post" or target_type == "reply" %} by @{{ target_owner }}{% endif %}. A person reads every report. Nothing is hidden automatically.</p>
   {% if own %}
-    <p>This is your own {% if target_type == "post" %}post{% else %}profile{% endif %}, so there is nothing to report. If something is wrong, <a href="{% url 'contact' %}">contact us</a>.</p>
+    <p>This is your own {% if target_type == "post" %}post{% elif target_type == "reply" %}reply{% else %}profile{% endif %}, so there is nothing to report. If something is wrong, <a href="{% url 'contact' %}">contact us</a>.</p>
   {% else %}
     <form method="post" class="stack mod-form">
       {% csrf_token %}

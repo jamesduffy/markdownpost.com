@@ -6,6 +6,7 @@ from django.utils.html import format_html
 
 from accounts.models import User
 from posts.models import Post
+from replies.models import Reply
 
 from .models import ContactMessage, Report
 
@@ -66,6 +67,8 @@ class ReportAdmin(admin.ModelAdmin):
         "suspend_user",
         "restore_hidden_posts",
         "reactivate_suspended_user",
+        "hide_reported_reply",
+        "restore_hidden_replies",
     )
     fields = (
         "status", "reason", "target_type", "target_link", "target_owner_link", "note", "reporter_display", "created_at",
@@ -101,6 +104,11 @@ class ReportAdmin(admin.ModelAdmin):
             links.append(format_html('<a href="{}">post in admin</a>', reverse("admin:posts_post_change", args=[obj.target_id])))
         elif obj.target_type == Report.TargetType.POST:
             links.append("(post no longer exists)")
+        elif obj.target_type == Report.TargetType.REPLY:
+            if Reply.objects.filter(pk=obj.target_id).exists():
+                links.append(format_html('<a href="{}">reply in admin</a>', reverse("admin:replies_reply_change", args=[obj.target_id])))
+            else:
+                links.append("(reply no longer exists)")
         return format_html_join_pipe(links) if links else obj.target_id
 
     @admin.display(description="Account")
@@ -123,7 +131,7 @@ class ReportAdmin(admin.ModelAdmin):
     def restore_summary(self, obj):
         rows = []
         for e in obj.restore_data or []:
-            what = {"hide_posts": f"hid {len(e.get('posts', []))} post(s)", "suspend": f"suspended @{e.get('username', '?')}"}.get(e.get("kind"), e.get("kind"))
+            what = {"hide_posts": f"hid {len(e.get('posts', []))} post(s)", "suspend": f"suspended @{e.get('username', '?')}", "hide_reply": "hid the reported reply"}.get(e.get("kind"), e.get("kind"))
             rows.append(f"{e.get('at', '')}: {what} ({'restored' if e.get('restored') else 'in effect'})")
         return "\n".join(rows) or "None"
 
@@ -219,6 +227,49 @@ class ReportAdmin(admin.ModelAdmin):
                         report.status = Report.Status.REVIEWING
                     report.save()
         self.message_user(request, f"Restored {restored} post(s); left {skipped} alone (changed or deleted since).")
+
+    # -- hiding replies (reversible)
+    @admin.action(description="Hide the reported reply (readers stop seeing it)")
+    def hide_reported_reply(self, request, queryset):
+        if not _needs(request, "replies.change_reply"):
+            return self.message_user(request, "You need permission to change replies.", messages.ERROR)
+        done = 0
+        with transaction.atomic():
+            for report in queryset:
+                if report.target_type != Report.TargetType.REPLY:
+                    self.message_user(request, f"Report {report.pk} is not about a reply: skipped.", messages.WARNING)
+                    continue
+                n = Reply.objects.filter(pk=report.target_id, mod_hidden_at__isnull=True).update(mod_hidden_at=timezone.now())
+                if not n:
+                    self.message_user(request, f"Report {report.pk}: the reply is gone or already hidden.", messages.WARNING)
+                    continue
+                report.restore_data = [*report.restore_data, _entry(request, "hide_reply", reply_id=report.target_id)]
+                _log(report, request, "Hid the reported reply (it stays in the database, readers cannot see it). Use 'Restore hidden replies' to undo.")
+                _handled(report, request, Report.Status.ACTIONED)
+                report.save()
+                done += 1
+        self.message_user(request, f"Hid {done} reply(ies).")
+
+    @admin.action(description="Restore hidden replies (undo the hide actions on these reports)")
+    def restore_hidden_replies(self, request, queryset):
+        if not _needs(request, "replies.change_reply"):
+            return self.message_user(request, "You need permission to change replies.", messages.ERROR)
+        restored = 0
+        with transaction.atomic():
+            for report in queryset:
+                changed = False
+                for entry in report.restore_data:
+                    if entry.get("kind") != "hide_reply" or entry.get("restored"):
+                        continue
+                    restored += Reply.objects.filter(pk=entry["reply_id"], mod_hidden_at__isnull=False).update(mod_hidden_at=None)
+                    entry["restored"] = True
+                    changed = True
+                if changed:
+                    _log(report, request, "Restored the reply hidden earlier on this report.")
+                    if report.status == Report.Status.ACTIONED:
+                        report.status = Report.Status.REVIEWING
+                    report.save()
+        self.message_user(request, f"Restored {restored} reply(ies).")
 
     # -- suspending users (reversible)
     @admin.action(description="Suspend this user (is_active=False)")

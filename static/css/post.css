@@ -303,3 +303,40 @@ html { scroll-behavior: smooth; }
 .prose .alert-warning .alert-title::before { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 20h20L12 3ZM12 10v4M12 17h.01'/%3E%3C/svg%3E"); }
 .prose .alert-caution .alert-title::before { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3h8l5 5v8l-5 5H8l-5-5V8l5-5ZM12 8v5M12 16h.01'/%3E%3C/svg%3E"); }
 .prose .alert > :last-child { margin-bottom: 0; }
+
+/* Replies: calm, flat, no counts. Only the page's own colour tokens, so every author theme (and Plain view) stays readable. */
+.replies { margin: 0 0 40px; scroll-margin-top: 24px; }
+.replies-title { font: 700 var(--scale0) var(--font); margin: 0 0 14px; }
+.replies-note { color: var(--muted); font: var(--scale-1)/1.5 var(--font); margin: 0 0 14px; }
+.reply-list { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 0; }
+.reply { padding: 16px 0; border-top: 1px solid var(--read-rule); scroll-margin-top: 24px; }
+.reply:target { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.reply.is-hidden { opacity: .75; }
+.reply-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font: var(--scale-1) var(--font); }
+.reply-name { color: var(--fg); font-weight: 650; text-decoration: none; }
+.reply-name:hover { color: var(--accent); }
+.reply-time { color: var(--muted); }
+.reply-state { margin: 6px 0 0; color: var(--muted); font: italic var(--scale-1)/1.5 var(--font); }
+.reply-body { margin: 6px 0 0; color: var(--fg); font: var(--scale0)/1.6 var(--font); overflow-wrap: anywhere; }
+.reply-body p { margin: 0 0 .7em; }
+.reply-body p:last-child { margin-bottom: 0; }
+.reply-body a { color: var(--link, var(--accent)); text-decoration: underline; text-underline-offset: .2em; }
+.reply-body blockquote { margin: .6em 0; padding-left: 1em; border-left: 3px solid var(--accent); color: var(--read-soft); }
+.reply-body pre { margin: .6em 0; padding: 10px 12px; overflow-x: auto; background: var(--code-bg); border: 1px solid var(--read-rule); border-radius: 8px; font: var(--scale-1)/1.55 var(--mono); }
+.reply-body :not(pre) > code { font: .88em var(--mono); background: var(--code-bg); border: 1px solid var(--read-rule); padding: .05em .35em; border-radius: 5px; }
+.reply-body ul, .reply-body ol { margin: .4em 0 .7em; padding-left: 1.4em; }
+.reply-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 14px; margin-top: 6px; }
+.reply-actions form, .replies-inline { display: inline; margin: 0; }
+.reply-link { min-height: 36px; padding: 0 2px; border: 0; background: none; color: var(--muted); font: var(--scale-1) var(--font); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.reply-link:hover { color: var(--fg); }
+.reply-actions .report-link { display: inline-flex; align-items: center; min-height: 36px; }
+.reply-compose { margin-top: 18px; scroll-margin-top: 24px; }
+.reply-form { display: grid; gap: 8px; }
+.reply-label { font: 600 var(--scale-1) var(--font); color: var(--fg); }
+.reply-form textarea { width: 100%; min-height: 7rem; padding: 10px 12px; font: var(--scale0)/1.55 var(--font); color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; resize: vertical; }
+.reply-help { margin: 0; color: var(--muted); font: var(--scale-1)/1.5 var(--font); }
+.reply-trap { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.replies-btn { justify-self: start; min-height: 44px; padding: 0 20px; border: 1px solid var(--fg); border-radius: 999px; background: transparent; color: var(--fg); font: 600 var(--scale-1) var(--font); cursor: pointer; transition: background-color .15s, color .15s; }
+.replies-btn:hover { background: var(--fg); color: var(--bg); }
+.replies-owner { display: block; margin-top: 14px; }
+@media (prefers-reduced-motion: reduce) { .replies-btn { transition: none; } }

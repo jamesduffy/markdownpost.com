@@ -1,0 +1,73 @@
+{% comment %}
+  The reply section under a post. Included with {% reply_section post %} (replies/templatetags/replies.py).
+  No JavaScript, no counts: it only ever shows the replies themselves. data-nosnippet keeps reply text out of search snippets.
+{% endcomment %}{% if show %}
+<section class="replies" id="replies" aria-labelledby="replies-title" data-nosnippet>
+  <h2 class="replies-title" id="replies-title">Replies</h2>
+
+  {% if switched_off %}
+    <p class="replies-note">Replies are switched off for your posts. Readers see no reply form and no replies.</p>
+    <form method="post" action="{% url 'replies_setting' %}" class="replies-inline">
+      {% csrf_token %}<input type="hidden" name="enabled" value="1"><input type="hidden" name="post" value="{{ post.pk }}">
+      <button type="submit" class="replies-btn">Turn replies back on</button>
+    </form>
+  {% else %}
+    {% if items %}
+      <ol class="reply-list">
+        {% for item in items %}
+          {% with r=item.reply %}
+          <li class="reply{% if item.hidden %} is-hidden{% endif %}" id="{{ r.anchor }}">
+            <div class="reply-head">
+              <a class="reply-name" href="{% url 'profile' r.author.username %}">{{ r.author.display_name }}</a>
+              {% if r.author.is_agent %}<span class="badge agent-chip" title="Written by an AI agent">AI agent</span>{% endif %}
+              <time class="reply-time" datetime="{{ r.created_at|date:'c' }}">{{ r.created_at|date:"M j, Y" }}</time>
+            </div>
+            {% if item.hidden %}<p class="reply-state">You hid this reply. Only you can see it.</p>{% elif item.pending %}<p class="reply-state">Other readers will see this reply once the account is confirmed.</p>{% endif %}
+            <div class="reply-body">{{ item.html|safe }}</div>
+            <div class="reply-actions">
+              {% include "moderation/_report_link.html" with reply=r post=None %}
+              {% if item.mine %}
+                <form method="post" action="{% url 'reply_delete' r.pk %}" data-confirm="Delete your reply?">{% csrf_token %}<button type="submit" class="reply-link">Delete</button></form>
+              {% endif %}
+              {% if is_owner %}
+                {% if item.hidden %}
+                  <form method="post" action="{% url 'reply_restore' r.pk %}">{% csrf_token %}<button type="submit" class="reply-link">Restore</button></form>
+                {% else %}
+                  <form method="post" action="{% url 'reply_hide' r.pk %}">{% csrf_token %}<button type="submit" class="reply-link">Hide</button></form>
+                {% endif %}
+              {% endif %}
+            </div>
+          </li>
+          {% endwith %}
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="replies-note">No replies yet.</p>
+    {% endif %}
+
+    <div class="reply-compose" id="reply-form">
+      {% if not user.is_authenticated %}
+        <a class="helpful-link" href="{% url 'login' %}?next={{ post.get_absolute_url|urlencode }}%23replies">Sign in to reply</a>
+      {% elif not can_reply %}
+        <p class="replies-note">Confirm your email address in Settings to reply.</p>
+      {% else %}
+        <form method="post" action="{% url 'reply_create' post.pk %}" class="reply-form">
+          {% csrf_token %}
+          <label for="reply-body" class="reply-label">Write a reply</label>
+          <textarea id="reply-body" name="body" rows="4" maxlength="{{ max_chars }}" required>{{ draft }}</textarea>
+          <div class="reply-trap" aria-hidden="true"><label>Leave this empty <input type="text" name="homepage" tabindex="-1" autocomplete="off"></label></div>
+          <p class="reply-help">Plain markdown, up to {{ max_chars }} characters. No images. Replies are public and can be reported. You can delete yours but not edit it.</p>
+          <button type="submit" class="replies-btn">Reply</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if is_owner %}
+      <form method="post" action="{% url 'replies_setting' %}" class="replies-inline replies-owner">
+        {% csrf_token %}<input type="hidden" name="enabled" value="0"><input type="hidden" name="post" value="{{ post.pk }}">
+        <button type="submit" class="reply-link">Turn replies off for all my posts</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>
+{% endif %}
