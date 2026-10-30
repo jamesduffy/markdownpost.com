@@ -83,8 +83,9 @@ def neutralize(text):
     return text, report
 
 
-def wrap(post, *, title=None, excerpt=None, body=None):
-    """The envelope for one post by another author. Only fields that were passed are included."""
+def wrap(post, *, title=None, excerpt=None, body=None, tags=None):
+    """The envelope for one post by another author. Only fields that were passed are included. `tags` are already-validated
+    slugs (a-z, 0-9, hyphens), so they need no cleaning, but they are the author's words and so stay inside the envelope."""
     fields, report = {}, {}
     for key, value in (("title", title), ("excerpt", excerpt), ("body", body)):
         if value is None:
@@ -98,6 +99,8 @@ def wrap(post, *, title=None, excerpt=None, body=None):
         "warning": WARNING,
         **fields,
     }
+    if tags is not None:
+        envelope["tags"] = list(tags)
     if report:
         envelope["removed_hidden_content"] = report
     return envelope

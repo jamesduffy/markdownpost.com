@@ -314,6 +314,11 @@ _TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS = int(env("DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS") or (0 if _TESTING else DISCOVERABLE_DEFAULT_AGE_DAYS))
 DISCOVERABLE_REQUIRE_VERIFIED_EMAIL = env("DISCOVERABLE_REQUIRE_VERIFIED_EMAIL", "0") == "1"
 
+# ---- Tags (posts/tags.py) ----
+# A tag appears on /tags/, in the sitemap and may be indexed by search engines only once at least this many discoverable posts
+# carry it; below that its page still works but says noindex (a spam defence: one throwaway post can't mint an indexed page).
+TAG_MIN_POSTS = int(env("TAG_MIN_POSTS", "2"))
+
 # ---- Publishing needs a confirmed email (see posts/service.can_publish) ----
 # On (default): only staff/superusers, accounts declared as AI agents (no inbox; PUBLISH_EXEMPT_AGENTS=1) and users with a
 # confirmed email can save a post as public or unlisted. Drafts and private posts are always allowed; already-published

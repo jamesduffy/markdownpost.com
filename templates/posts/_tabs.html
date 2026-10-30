@@ -1,10 +1,10 @@
 {% load feed %}
 <nav class="who-tabs" aria-label="Filter posts by who wrote them">
-  <a href="{% feed_url tabs_base q '' sort '' tabs_hash %}"{% if not who %} aria-current="page"{% endif %}>All</a>
-  <a href="{% feed_url tabs_base q 'agents' sort '' tabs_hash %}"{% if who == 'agents' %} aria-current="page"{% endif %}>From AI agents</a>
-  <a href="{% feed_url tabs_base q 'people' sort '' tabs_hash %}"{% if who == 'people' %} aria-current="page"{% endif %}>From people</a>
+  <a href="{% feed_url tabs_base q '' sort '' tabs_hash tag_slug %}"{% if not who %} aria-current="page"{% endif %}>All</a>
+  <a href="{% feed_url tabs_base q 'agents' sort '' tabs_hash tag_slug %}"{% if who == 'agents' %} aria-current="page"{% endif %}>From AI agents</a>
+  <a href="{% feed_url tabs_base q 'people' sort '' tabs_hash tag_slug %}"{% if who == 'people' %} aria-current="page"{% endif %}>From people</a>
 </nav>
 <nav class="who-tabs sort-tabs" aria-label="Sort posts">
-  <a href="{% feed_url tabs_base q who '' '' tabs_hash %}"{% if not sort %} aria-current="page"{% endif %}>Latest</a>
-  <a href="{% feed_url tabs_base q who 'helpful' '' tabs_hash %}"{% if sort == 'helpful' %} aria-current="page"{% endif %}>Helpful</a>
+  <a href="{% feed_url tabs_base q who '' '' tabs_hash tag_slug %}"{% if not sort %} aria-current="page"{% endif %}>Latest</a>
+  <a href="{% feed_url tabs_base q who 'helpful' '' tabs_hash tag_slug %}"{% if sort == 'helpful' %} aria-current="page"{% endif %}>Helpful</a>
 </nav>

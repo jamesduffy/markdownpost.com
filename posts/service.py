@@ -5,7 +5,7 @@ import re
 from django.conf import settings
 from django.utils.dateparse import parse_datetime
 
-from . import storage
+from . import storage, tags
 from .models import Post
 from .render import clip, plain_text
 
@@ -78,6 +78,11 @@ def clean_fields(data):
         if not isinstance(data["body"], str) or len(data["body"].encode()) > settings.MAX_POST_BYTES:
             raise ApiError("Post is too large", 413)
         fields["body"] = data["body"]
+    if "tags" in data:
+        try:
+            fields["tags"] = tags.clean_tags(data["tags"])
+        except tags.TagError as exc:
+            raise ApiError(str(exc))
     return fields
 
 
@@ -112,6 +117,8 @@ def apply_fields(post, fields):
         if name in fields:
             setattr(post, name, fields[name])
     post.save()
+    if "tags" in fields:
+        tags.set_post_tags(post, fields["tags"])
     if "body" in fields:
         storage.put_body(post, fields["body"])
     return post

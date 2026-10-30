@@ -278,7 +278,7 @@ class SitemapTests(Base):
         self.assertIn("xml", index["Content-Type"])
         self.assertIn("max-age=3600", index["Cache-Control"])
         sections = self.urls(index.content)
-        self.assertEqual(sections, ["http://testserver/sitemap-posts.xml", "http://testserver/sitemap-profiles.xml"])
+        self.assertEqual(sections, ["http://testserver/sitemap-posts.xml", "http://testserver/sitemap-profiles.xml", "http://testserver/sitemap-tags.xml"])
         posts = self.client.get("/sitemap-posts.xml")
         self.assertEqual(self.urls(posts.content), ["http://testserver" + keep.get_absolute_url()])
         self.assertIn("<lastmod>", posts.content.decode())

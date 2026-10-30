@@ -23,6 +23,24 @@ class PostQuerySet(models.QuerySet):
         return self.public().filter(discovery.author_q())
 
 
+class Tag(models.Model):
+    """A topic label. Created on first use from a post's tags (see posts/tags.py for the rules); the slug is always
+    lowercase, which is what makes the unique constraint case-insensitive on every database."""
+
+    slug = models.CharField(max_length=30)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["slug"]
+        constraints = [models.UniqueConstraint(fields=["slug"], name="unique_tag_slug")]
+
+    def __str__(self):
+        return self.slug
+
+    def get_absolute_url(self):
+        return reverse("tag_page", args=[self.slug])
+
+
 class Post(models.Model):
     class Visibility(models.TextChoices):
         PRIVATE = "private", "Private"
@@ -44,6 +62,7 @@ class Post(models.Model):
     # Ranking key for the "Helpful" sort (see posts/ranking.py): log of the time-decayed sum of votes, NULL = no votes.
     # Not a count. Never show it to anyone or put it in any output.
     helpful_rank = models.FloatField(null=True, blank=True, db_index=True, editable=False)
+    tags = models.ManyToManyField(Tag, related_name="posts", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -58,6 +77,11 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title or self.id
+
+    @property
+    def tag_slugs(self):
+        """The post's tags as a sorted list of slugs (uses prefetch_related("tags") when the caller did it)."""
+        return sorted(t.slug for t in self.tags.all())
 
     @property
     def body_key(self):

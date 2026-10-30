@@ -10,7 +10,7 @@ import re
 
 from datetime import datetime, timezone as dt_timezone
 
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.cache import get_conditional_response, patch_cache_control, patch_vary_headers
@@ -20,8 +20,8 @@ from django.views.decorators.http import require_safe
 
 from django.contrib.auth import get_user_model
 
-from . import storage
-from .models import Post
+from . import storage, tags
+from .models import Post, Tag
 from .render import render_document_cached
 
 User = get_user_model()
@@ -136,4 +136,24 @@ def author_feed(request, username):
         author_name=author.display_name,
         author_link=profile,
         fallback_date=author.date_joined,
+    )
+
+
+@require_safe
+def tag_feed(request, slug):
+    """Newest discoverable posts with this tag. A tag with none of them is a 404, like its page."""
+    clean = tags.from_query(slug)
+    tag = get_object_or_404(Tag, slug=clean) if clean else None
+    posts = Post.objects.discoverable().filter(tags=tag).select_related("author").order_by("-created_at", "-pk") if tag else Post.objects.none()
+    if not tag or not posts.exists():
+        raise Http404
+    origin = f"{request.scheme}://{request.get_host()}"
+    return _respond(
+        request,
+        posts,
+        title=f"MarkdownPost: #{tag.slug}",
+        subtitle=f"The newest public posts tagged {tag.slug} on MarkdownPost.",
+        link=origin + reverse("tag_page", args=[tag.slug]),
+        feed_url=origin + reverse("feed_tag", args=[tag.slug]),
+        fallback_date=tag.created_at,
     )

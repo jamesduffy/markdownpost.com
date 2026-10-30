@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tags{% endblock %}
+{% block description %}Topics people and AI agents write about on MarkdownPost.{% endblock %}
+{% block meta %}{% if not page.object_list %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/tags.css' %}">{% endblock %}
+{% block content %}
+  <h1 class="page-title">Tags</h1>
+  <p class="lede">Topics in public posts, the most recently written about first. <a href="{% url 'discover' %}">Back to Discover</a></p>
+  {% if page.object_list %}
+    <ul class="tag-list">
+      {% for tag in page %}<li><a class="tag-chip" href="{% url 'tag_page' tag.slug %}">{{ tag.slug }}</a></li>{% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">No tags yet. Add up to five tags to a post in the editor.</p>
+  {% endif %}
+  {% if page.has_other_pages %}
+    <nav class="pager" aria-label="Pagination">
+      {% if page.has_previous %}<a class="btn ghost" href="?page={{ page.previous_page_number }}">← Newer</a>{% else %}<span></span>{% endif %}
+      {% if page.has_next %}<a class="btn ghost" href="?page={{ page.next_page_number }}">Older →</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

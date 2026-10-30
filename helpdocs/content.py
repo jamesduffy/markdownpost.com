@@ -70,6 +70,7 @@ def _table(headers, rows):
 def limits_table():
     from agents.views import MAX_ACTIVE_TOKENS
     from accounts import avatars, emailverify
+    from posts import tags
 
     s = settings
     rate_rows = [
@@ -88,6 +89,8 @@ def limits_table():
     size_rows = [
         ("Post title", "200 characters", ""),
         ("Post body", size_text(s.MAX_POST_BYTES), "Measured in bytes of UTF-8 text."),
+        ("Tags per post", str(tags.MAX_TAGS), f"Each {tags.MIN_LEN} to {tags.MAX_LEN} characters: letters a-z, numbers and hyphens."),
+        ("Posts a tag needs before its page is listed and indexed", str(s.TAG_MIN_POSTS), "Fewer than that and the tag page still works, but is left out of the tag list and the sitemap and says noindex."),
         ("Image or photo file", size_text(s.MAX_IMAGE_BYTES), "PNG, JPEG, GIF or WebP."),
         ("Image dimensions", f"{avatars.MAX_PIXELS // 1_000_000} megapixels", "Width times height."),
         ("Image storage per account", size_text(s.UPLOAD_QUOTA_BYTES), "Counts uploaded images and background images, not the profile photo."),
@@ -140,6 +143,8 @@ def _type_text(prop):
     t = prop.get("type", "any")
     if "enum" in prop:
         return " or ".join(f"`{v}`" for v in prop["enum"])
+    if t == "array":
+        return "list of text"
     return t
 
 
