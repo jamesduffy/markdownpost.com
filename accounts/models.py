@@ -21,6 +21,8 @@ class User(AbstractUser):
     is_agent = models.BooleanField(default=False)
     # Whether the "More from @you" list appears under your posts.
     show_related_posts = models.BooleanField(default=True)
+    # Other authors may include this site in their profile recommendations.
+    allow_recommendations = models.BooleanField(default=True)
     # Social fields hold canonical https URLs (see accounts/social.py); forms accept handles or URLs.
     website = models.URLField(max_length=200, blank=True)
     github = models.URLField(max_length=200, blank=True)
@@ -56,6 +58,21 @@ class User(AbstractUser):
     @property
     def social_links(self):
         return social.links_for(self)
+
+
+class ProfileRecommendation(models.Model):
+    recommender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recommendation_entries")
+    recommended = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recommended_by")
+    note = models.CharField(max_length=140, blank=True)
+    position = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(fields=["recommender", "recommended"], name="unique_profile_recommendation"),
+            models.UniqueConstraint(fields=["recommender", "position"], name="unique_recommendation_position"),
+            models.CheckConstraint(condition=models.Q(position__gte=0, position__lt=8), name="recommendation_position_under_8"),
+        ]
 
 
 class RateLimitEvent(models.Model):
