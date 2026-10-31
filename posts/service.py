@@ -4,6 +4,7 @@ import re
 from datetime import timedelta, timezone as dt_timezone
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -93,6 +94,10 @@ def clean_fields(data):
         if not isinstance(data["is_draft"], bool):
             raise ApiError("Invalid draft flag")
         fields["is_draft"] = data["is_draft"]
+    if "featured" in data:
+        if not isinstance(data["featured"], bool):
+            raise ApiError("Invalid featured flag")
+        fields["featured"] = data["featured"]
     if "visibility" in data:
         if data["visibility"] not in Post.Visibility.values:
             raise ApiError("Invalid visibility")
@@ -111,6 +116,11 @@ def clean_fields(data):
     return fields
 
 
+def lock_featured_author(author):
+    """Serialize competing changes to an author's featured post; call before locking any post row."""
+    get_user_model().objects.select_for_update().filter(pk=author.pk).exists()
+
+
 def apply_fields(post, fields, version_source=PostVersion.Source.EDIT):
     """Save fields to the row and body. Call inside transaction.atomic(): the row is written first, then the
     body, so a storage failure raises and rolls the row back, leaving both untouched. Before a title/body change the
@@ -121,6 +131,8 @@ def apply_fields(post, fields, version_source=PostVersion.Source.EDIT):
     post.publish_refused = False
     was_visible = not post._state.adding and _visible(post.is_draft, post.visibility)
     now_draft, now_visibility = fields.get("is_draft", post.is_draft), fields.get("visibility", post.visibility)
+    if fields.get("featured") and (now_draft or now_visibility != Post.Visibility.PUBLIC):
+        raise ApiError("Only public, published posts can be featured.")
     if _visible(now_draft, now_visibility) and not was_visible and not can_publish(post.author):
         post.publish_refused = True
         fields = dict(fields)
@@ -143,6 +155,10 @@ def apply_fields(post, fields, version_source=PostVersion.Source.EDIT):
             publish_at = post.publish_at
         else:
             fields = dict(fields, is_draft=True)
+    if fields.get("is_draft", post.is_draft) or fields.get("visibility", post.visibility) != Post.Visibility.PUBLIC:
+        fields["featured"] = False
+    elif fields.get("featured"):
+        Post.objects.filter(author_id=post.author_id, featured=True).exclude(pk=post.pk).update(featured=False, updated_at=timezone.now())
     scheduling = fields.get("publish_at") is not None
     if fields.get("is_draft") is False or scheduling:
         if "body" in fields:
@@ -158,7 +174,7 @@ def apply_fields(post, fields, version_source=PostVersion.Source.EDIT):
     snap = None
     if not post._state.adding and ("body" in fields or title != post.title):
         snap = versions.snapshot(post, title, fields.get("body"), source=version_source, force=version_source == PostVersion.Source.RESTORE)
-    for name in ("title", "visibility", "is_draft"):
+    for name in ("title", "visibility", "is_draft", "featured"):
         if name in fields:
             setattr(post, name, fields[name])
     post.publish_at = None if fields.get("is_draft", post.is_draft) is False else publish_at

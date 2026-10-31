@@ -79,6 +79,8 @@ You never have to press Publish to keep your work: autosave keeps it as a draft.
 
 To publish at a set time instead, use **Schedule** next to the button; see [Publishing, drafts and visibility]({{origin}}/help/publishing/). Earlier versions of a post are kept; see **Version history** on the same page.
 
+On a public, published post, use **Featured** in the editor toolbar to pin it above your other posts on your profile. Featuring another post replaces the previous one; moving a post back to drafts or changing it to unlisted/private removes the pin.
+
 Your drafts are in the **Drafts** menu at the top of the editor and on the Drafts page ({{origin}}/drafts/). To take a published post back to drafts, use the **⋯** menu on the post page and choose **Move back to drafts**.
 
 ## Editing in two places at once

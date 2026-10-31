@@ -12,7 +12,7 @@ from .models import ContactMessage, Report
 
 # ---- helpers ------------------------------------------------------------------------------------------------------
 
-HIDDEN = {"is_draft": True, "visibility": Post.Visibility.PRIVATE}
+HIDDEN = {"is_draft": True, "visibility": Post.Visibility.PRIVATE, "featured": False}
 
 
 def _stamp(request):
