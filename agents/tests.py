@@ -130,6 +130,7 @@ class ProtocolTests(McpBase):
             self.assertEqual(tools[name]["inputSchema"]["type"], "object")
             self.assertTrue(tools[name]["description"])
             self.assertIn("readOnlyHint", tools[name]["annotations"])
+        self.assertIn("featured", tools["update_post"]["inputSchema"]["properties"])
         self.assertNotIn("delete_post", tools)  # deliberately not offered
 
     def test_errors(self):
@@ -182,6 +183,17 @@ class PostToolTests(McpBase):
         self.assertTrue(self.ok("update_post", {"id": out["id"], "publish": False})["is_draft"])
         self.assertIn("only write drafts", self.err("update_post", {"id": out["id"], "publish": True}, key=self.draft_key))
         self.assertIn("Nothing to change", self.err("update_post", {"id": out["id"]}))
+
+    def test_featured_post_must_be_public_and_published(self):
+        first = self.ok("create_post", {"title": "A", "body": "one", "publish": True})
+        second = self.ok("create_post", {"title": "B", "body": "two", "publish": True})
+        self.assertTrue(self.ok("update_post", {"id": first["id"], "featured": True})["featured"])
+        self.assertTrue(self.ok("update_post", {"id": second["id"], "featured": True})["featured"])
+        self.assertFalse(self.ok("get_post", {"id": first["id"]})["featured"])
+        self.assertFalse(self.ok("update_post", {"id": second["id"], "publish": False})["featured"])
+        draft = self.ok("create_post", {"title": "Draft", "body": "text"})
+        self.assertIn("public, published", self.err("update_post", {"id": draft["id"], "featured": True}))
+        self.assertIn("featured", self.err("update_post", {"id": second["id"]}))
 
     def test_expected_updated_detects_conflicts(self):
         out = self.ok("create_post", {"title": "A", "body": "one"})

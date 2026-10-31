@@ -7,6 +7,8 @@
 .editor-bar .bar-help::after { content: ""; position: absolute; inset: -4px; } /* 44px hit area */
 .bar-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; color: var(--fg); font-size: var(--scale-1); text-decoration: underline; text-underline-offset: 3px; }
 .editor-bar select { min-height: 44px; color: var(--fg); font-size: var(--scale-1); border-color: var(--border); }
+.featured-control { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--fg); font-size: var(--scale-1); white-space: nowrap; }
+.featured-control input { width: 18px; height: 18px; accent-color: var(--accent); }
 .editor-bar .btn, .editor-bar .btn.small { min-height: 44px; white-space: nowrap; }
 .drafts-menu summary { min-height: 44px; display: inline-flex; align-items: center; }
 .drafts-pop .drafts-site { border-top: 1px solid var(--border); border-radius: 0 0 9px 9px; margin-top: 4px; color: var(--accent); font-weight: 600; }

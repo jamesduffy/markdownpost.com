@@ -180,6 +180,14 @@ class FeedTests(Base):
         self.assertIn('src="http://testserver/media/images/%s.png"' % IMG, content.text)  # relative links made absolute
         self.assertIn("&lt;b&gt;", res.content.decode().split("<title>")[2])  # raw XML escapes the title text
 
+    def test_featured_post_does_not_change_author_feed_order(self):
+        newer = make_post(self.old, title="Newer")
+        older = make_post(self.old, title="Featured", featured=True)
+        Post.objects.filter(pk=older.pk).update(created_at=newer.created_at - timedelta(days=1))
+        res, root = self.feed(f"/@{self.old.username}/feed.xml")
+        titles = [entry.find(ATOM + "title").text for entry in root.findall(ATOM + "entry")]
+        self.assertEqual(titles, ["Newer", "Featured"])
+
     def test_headers(self):
         make_post(self.old)
         res, _ = self.feed()

@@ -8,7 +8,10 @@ from .models import Helpful, Post, Tag
 
 
 def _set_visibility(modeladmin, request, queryset, visibility):
-    updated = queryset.update(visibility=visibility, updated_at=timezone.now())
+    updates = {"visibility": visibility, "updated_at": timezone.now()}
+    if visibility != Post.Visibility.PUBLIC:
+        updates["featured"] = False
+    updated = queryset.update(**updates)
     messages.success(request, f"{updated} post(s) set to {visibility}.")
 
 
@@ -82,10 +85,16 @@ class PostAdmin(admin.ModelAdmin):
     actions = ("make_public", "make_unlisted", "make_private", "mark_draft")
     readonly_fields = ("id", "created_at", "updated_at", "excerpt", "links", "body_preview", "publish_at")
     fieldsets = (
-        (None, {"fields": ("title", "author", "is_draft", "visibility", "tags", "publish_at")}),
+        (None, {"fields": ("title", "author", "is_draft", "visibility", "featured", "tags", "publish_at")}),
         ("Content", {"fields": ("excerpt", "body_preview", "links")}),
         ("Metadata", {"fields": ("id", "created_at", "updated_at")}),
     )
+    readonly_fields += ("featured",)
+
+    def save_model(self, request, obj, form, change):
+        if obj.is_draft or obj.visibility != Post.Visibility.PUBLIC:
+            obj.featured = False
+        super().save_model(request, obj, form, change)
 
     @admin.display(description="Discoverable", boolean=True)
     def discoverable(self, obj):
@@ -152,5 +161,5 @@ class PostAdmin(admin.ModelAdmin):
 
     @admin.action(description="Move selected posts back to drafts")
     def mark_draft(self, request, queryset):
-        updated = queryset.update(is_draft=True, updated_at=timezone.now())
+        updated = queryset.update(is_draft=True, featured=False, updated_at=timezone.now())
         messages.success(request, f"{updated} post(s) moved to drafts.")

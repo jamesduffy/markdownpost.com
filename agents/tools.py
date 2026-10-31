@@ -23,7 +23,7 @@ from . import untrusted
 from posts import discovery
 from replies import rules as reply_rules
 from replies.models import Reply
-from posts.service import PUBLISH_REFUSED_AGENT_HINT, PUBLISH_REFUSED_MESSAGE, ApiError, CLIENT_ID_RE, apply_fields, clean_fields
+from posts.service import PUBLISH_REFUSED_AGENT_HINT, PUBLISH_REFUSED_MESSAGE, ApiError, CLIENT_ID_RE, apply_fields, clean_fields, lock_featured_author
 from uploads import service as uploads_service
 
 log = logging.getLogger("agents.mcp")
@@ -331,7 +331,7 @@ def create_post(ctx, args):
 def update_post(ctx, args):
     _need_write(ctx)
     post_id = _str(args.get("id"), "id", 1, 16)
-    data = {k: args[k] for k in ("title", "body", "visibility", "tags") if k in args}
+    data = {k: args[k] for k in ("title", "body", "visibility", "tags", "featured") if k in args}
     if args.get("publish_at") is not None:
         if args.get("publish"):
             raise ToolError("Pass publish_at (schedule for later) or publish=true (now), not both.")
@@ -350,10 +350,12 @@ def update_post(ctx, args):
     fields = clean_fields(data)
     base = fields.pop("base", None)
     if not fields:
-        raise ToolError("Nothing to change: pass title, body, tags, visibility, publish or publish_at.")
+        raise ToolError("Nothing to change: pass title, body, tags, visibility, featured, publish or publish_at.")
     if ratelimit.is_limited("mcp-update", str(ctx.user.pk), settings.MCP_UPDATES_PER_HOUR, 3600):
         raise ToolError(f"Edit limit reached ({settings.MCP_UPDATES_PER_HOUR} per hour). Try again later.")
     with transaction.atomic():
+        if fields.get("featured"):
+            lock_featured_author(ctx.user)
         post = _own_post(ctx, post_id, lock=True)
         if base is not None and base != post.updated_at:
             raise ToolError(f"The post changed since you read it (now updated {post.updated_at.isoformat()}). Call get_post again and merge your changes.")
@@ -700,9 +702,9 @@ TOOLS = {
     ),
     "update_post": (
         update_post,
-        "Change one of your posts. Pass only what changes. publish=true publishes a draft (needs a token that can publish); publish=false moves it back to drafts. publish_at (ISO 8601 with a UTC offset, in the future; needs a token that can publish) schedules a draft to be published automatically at that time; publish_at=null cancels the schedule. Pass expected_updated (the `updated` value from get_post) to avoid overwriting someone else's edit.",
+        "Change one of your posts. Pass only what changes. featured=true pins a public, published post to your profile and unfeatures your previous one; featured=false removes it. publish=true publishes a draft (needs a token that can publish); publish=false moves it back to drafts. publish_at (ISO 8601 with a UTC offset, in the future; needs a token that can publish) schedules a draft to be published automatically at that time; publish_at=null cancels the schedule. Pass expected_updated (the `updated` value from get_post) to avoid overwriting someone else's edit.",
         _schema(
-            {"id": {"type": "string"}, "title": {"type": "string", "maxLength": 200}, "body": {"type": "string"}, "tags": _TAGS, "visibility": _VIS, "publish": {"type": "boolean"}, "publish_at": _PUBLISH_AT, "expected_updated": {"type": "string"}},
+            {"id": {"type": "string"}, "title": {"type": "string", "maxLength": 200}, "body": {"type": "string"}, "tags": _TAGS, "visibility": _VIS, "featured": {"type": "boolean"}, "publish": {"type": "boolean"}, "publish_at": _PUBLISH_AT, "expected_updated": {"type": "string"}},
             ["id"],
         ),
         False,

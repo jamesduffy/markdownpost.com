@@ -26,7 +26,7 @@ from accounts import ratelimit
 
 from . import helpful, scheduling, seo, storage, tags
 from .models import Post, Tag
-from .service import CLIENT_ID_RE, EMAIL_NOT_CONFIRMED, PUBLISH_REFUSED_MESSAGE, ApiError, apply_fields, can_publish, clean_fields
+from .service import CLIENT_ID_RE, EMAIL_NOT_CONFIRMED, PUBLISH_REFUSED_MESSAGE, ApiError, apply_fields, can_publish, clean_fields, lock_featured_author
 from .render import make_excerpt, render_document, render_document_cached
 
 User = get_user_model()
@@ -116,11 +116,14 @@ def home(request):
 def profile(request, username):
     owner = get_object_or_404(User, username=username)
     scheduling.maybe_publish_due()
+    featured_post = owner.posts.filter(featured=True, visibility=Post.Visibility.PUBLIC, is_draft=False).first()
     posts = owner.posts.all()
     if request.user != owner:
         posts = posts.filter(visibility=Post.Visibility.PUBLIC, is_draft=False)
+    if featured_post:
+        posts = posts.exclude(pk=featured_post.pk)
     page = _paginate(request, posts.select_related("author"))
-    return render(request, "posts/profile.html", {"owner": owner, "page": page, "seo": seo.profile_seo(request, owner, page.number)})
+    return render(request, "posts/profile.html", {"owner": owner, "featured_post": featured_post, "page": page, "seo": seo.profile_seo(request, owner, page.number)})
 
 
 def _visible_post(request, username, post_id):
@@ -260,8 +263,9 @@ def draft_post(request, username, post_id):
     """Move a saved post back to drafts (takes it off Discover and your profile)."""
     post = get_object_or_404(Post, pk=post_id, author=request.user, author__username=username)
     post.is_draft = True
+    post.featured = False
     post.publish_at = None
-    post.save(update_fields=["is_draft", "publish_at", "updated_at"])
+    post.save(update_fields=["is_draft", "featured", "publish_at", "updated_at"])
     return redirect("drafts")
 
 
@@ -319,6 +323,7 @@ def _post_json(post):
             "edit_url": post.edit_url,
             "updated": post.updated_at.isoformat(),
             "is_draft": post.is_draft,
+            "featured": post.featured,
             "tags": post.tag_slugs,
             "publish_at": post.publish_at.isoformat() if post.publish_at else None,
         },
@@ -344,6 +349,8 @@ def api_create(request):
     post = Post(author=request.user, client_id=client_id)
     try:
         with transaction.atomic():
+            if fields.get("featured"):
+                lock_featured_author(request.user)
             return _apply(post, fields)
     except IntegrityError:
         existing = client_id and Post.objects.filter(author=request.user, client_id=client_id).select_related("author").first()
@@ -359,6 +366,8 @@ def api_update(request, post_id):
     base = fields.pop("base", None)
     fields.pop("client_id", None)
     with transaction.atomic():
+        if fields.get("featured"):
+            lock_featured_author(request.user)
         # Row lock: concurrent saves queue up, so only one of them can match `base`.
         post = get_object_or_404(Post.objects.select_for_update(of=("self",)).select_related("author"), pk=post_id, author=request.user)
         if base is not None and base != post.updated_at:
@@ -374,6 +383,7 @@ def api_update(request, post_id):
                         "tags": post.tag_slugs,
                         "visibility": post.visibility,
                         "is_draft": post.is_draft,
+                        "featured": post.featured,
                         "publish_at": post.publish_at.isoformat() if post.publish_at else None,
                         "updated": post.updated_at.isoformat(),
                     },

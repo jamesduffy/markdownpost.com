@@ -53,6 +53,41 @@ class PostTests(TestCase):
         self.client.force_login(self.alice)
         self.assertContains(self.client.get("/@alice/"), post.get_absolute_url())
 
+    def test_featured_post_is_pinned_once_on_profile(self):
+        featured = self.make_post("public")
+        other = self.make_post("public")
+        self.client.force_login(self.alice)
+        res = self.api("put", f"/api/posts/{featured.id}/", {"featured": True})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["featured"])
+        html = self.client.get("/@alice/").content.decode()
+        self.assertLess(html.index("Featured"), html.index("Writing"))
+        self.assertEqual(html.count(featured.get_absolute_url()), 1)
+        self.assertIn(other.get_absolute_url(), html)
+
+    def test_featured_post_is_unfeatured_when_drafted_or_made_nonpublic(self):
+        post = self.make_post("public")
+        self.client.force_login(self.alice)
+        self.assertEqual(self.api("put", f"/api/posts/{post.id}/", {"featured": True}).status_code, 200)
+        self.assertEqual(self.api("put", f"/api/posts/{post.id}/", {"is_draft": True}).status_code, 200)
+        post.refresh_from_db()
+        self.assertTrue(post.is_draft)
+        self.assertFalse(post.featured)
+        self.assertEqual(self.api("put", f"/api/posts/{post.id}/", {"is_draft": False}).status_code, 200)
+        self.assertEqual(self.api("put", f"/api/posts/{post.id}/", {"featured": True}).status_code, 200)
+        self.assertEqual(self.api("put", f"/api/posts/{post.id}/", {"visibility": "unlisted"}).status_code, 200)
+        post.refresh_from_db()
+        self.assertFalse(post.featured)
+
+    def test_only_public_published_posts_can_be_featured(self):
+        self.client.force_login(self.alice)
+        draft = Post.objects.create(author=self.alice, visibility="public")
+        private = self.make_post("private")
+        unlisted = self.make_post("unlisted")
+        for post in (draft, private, unlisted):
+            self.assertEqual(self.api("put", f"/api/posts/{post.id}/", {"featured": True}).status_code, 400)
+        self.assertEqual(self.api("put", f"/api/posts/{draft.id}/", {"featured": "yes"}).status_code, 400)
+
     def test_canonical_url_is_username_slash_id(self):
         post = self.make_post("public")
         self.assertEqual(post.get_absolute_url(), f"/@alice/{post.id}/")
@@ -124,6 +159,17 @@ class PostTests(TestCase):
         self.assertEqual(self.client.get("/").status_code, 200)
         self.client.force_login(self.bob)
         self.assertEqual(self.client.post(other.draft_url).status_code, 404)
+
+    def test_feature_control_is_available_only_for_public_published_posts(self):
+        published = self.make_post("public")
+        draft = Post.objects.create(author=self.alice, visibility="public")
+        private = self.make_post("private")
+        self.client.force_login(self.alice)
+        published_html = self.client.get(published.edit_url).content.decode()
+        self.assertIn('id="featured" type="checkbox"', published_html)
+        self.assertNotIn('id="featured" type="checkbox" checked disabled', published_html)
+        self.assertIn('id="featured" type="checkbox" disabled', self.client.get(draft.edit_url).content.decode())
+        self.assertIn('id="featured" type="checkbox" disabled', self.client.get(private.edit_url).content.decode())
 
     def test_bad_draft_flag_rejected(self):
         self.client.force_login(self.alice)

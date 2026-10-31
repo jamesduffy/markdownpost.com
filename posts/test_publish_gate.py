@@ -82,6 +82,15 @@ class ApiTests(GateBase):
         self.assertTrue(post.is_draft)
         self.assertEqual(storage.get_body(post), "Edited")
 
+    def test_refused_featured_publish_keeps_previous_pin(self):
+        featured = Post.objects.create(author=self.human, title="Featured", visibility="public", is_draft=False, featured=True)
+        draft = self.create(is_draft=True).json()["id"]
+        res = self.api("put", f"/api/posts/{draft}/", {"is_draft": False, "featured": True})
+        self.assertEqual(res.status_code, 403)
+        featured.refresh_from_db()
+        self.assertTrue(featured.featured)
+        self.assertFalse(Post.objects.get(pk=draft).featured)
+
     def test_going_from_private_to_public_stays_private(self):
         pid = self.create(visibility="private").json()["id"]
         res = self.api("put", f"/api/posts/{pid}/", {"visibility": "public", "body": "More"})

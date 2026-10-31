@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('posts', '0008_postversion'),
+        ('posts', '0009_post_featured_post_one_featured_per_author_and_more'),
     ]
 
     operations = [
