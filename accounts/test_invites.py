@@ -1,4 +1,5 @@
 import threading
+from unittest import skipUnless
 
 from django.contrib.auth import get_user_model
 from django.db import connection
@@ -153,6 +154,7 @@ class InviteAdminTests(TestCase):
         self.assertNotContains(res, inv.code)
 
 
+@skipUnless(connection.vendor == "postgresql", "needs a database with real row locks; SQLite (used in CI) serializes writers and locks the table")
 class InviteConcurrencyTests(TransactionTestCase):
     def _run_two(self, fn, args):
         barrier = threading.Barrier(2)
