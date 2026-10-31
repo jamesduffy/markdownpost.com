@@ -21,6 +21,7 @@
     "@fontsource/playfair-display": "^5.3.0",
     "@fontsource/press-start-2p": "^5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
+    "@sentry/browser": "^11.10.0",
     "esbuild": "^0.25.0",
     "katex": "^0.16.11",
     "mermaid": "^11.4.0"

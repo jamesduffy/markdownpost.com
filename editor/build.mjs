@@ -8,6 +8,7 @@ const out = resolve(process.argv[2] || "../static/dist");
 const common = { bundle: true, minify: true, target: "es2020" };
 
 await build({ ...common, entryPoints: ["src/main.js"], outfile: `${out}/editor.js` });
+await build({ ...common, entryPoints: ["src/sentry.js"], outfile: `${out}/sentry.js` });
 await build({
   ...common,
   entryPoints: ["src/rich.js"],

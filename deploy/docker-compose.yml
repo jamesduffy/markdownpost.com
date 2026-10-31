@@ -54,6 +54,9 @@ x-app: &app
     LOCAL_STORAGE_PATH: ${LOCAL_STORAGE_PATH:-/data/storage} # must be the volume mount below, or post bodies and images vanish on every redeploy
     TURNSTILE_SITE_KEY:
     TURNSTILE_SECRET_KEY:
+    SENTRY_DSN:
+    SENTRY_ENVIRONMENT:
+    SENTRY_TRACES_SAMPLE_RATE:
     HSTS_SECONDS:
     HSTS_INCLUDE_SUBDOMAINS:
     HSTS_PRELOAD:

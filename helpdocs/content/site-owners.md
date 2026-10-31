@@ -64,6 +64,10 @@ By default (`PUBLISH_REQUIRE_VERIFIED_EMAIL=1`) a person can make a post public 
 
 Set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (from Cloudflare Turnstile) and a check appears on sign-up, sign-in and password reset. It only turns on when **both** keys are set. If Cloudflare cannot be reached, those forms refuse rather than let everyone through.
 
+### Error reporting (Sentry)
+
+Set `SENTRY_DSN` to a Sentry project's DSN and uncaught server errors and browser JavaScript errors are reported to it, tagged with the running commit. Nothing else is sent: no cookies, request bodies, post text, IP addresses or session replays. `SENTRY_ENVIRONMENT` (default `production`) labels the events, and `SENTRY_TRACES_SAMPLE_RATE` (default `0`) turns on performance sampling. Leave `SENTRY_DSN` empty to keep it off.
+
 ## Real visitor addresses
 
 Rate limits count by network address. Behind a proxy, set `TRUST_PROXY=1` and either `TRUSTED_PROXY_COUNT` (how many proxies are in front) or, for Cloudflare, `CLIENT_IP_HEADER=CF-Connecting-IP`. Without that, all visitors can look like one address and one person can lock everyone out. Never expose the app port directly when you trust these headers.

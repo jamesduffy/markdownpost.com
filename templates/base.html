@@ -104,6 +104,7 @@
   <main id="main" tabindex="-1" class="{% block main_class %}container{% endblock %}">
     {% block content %}{% endblock %}
   </main>
+  {% if sentry %}<meta name="sentry-dsn" content="{{ sentry.dsn }}" data-environment="{{ sentry.environment }}" data-release="{{ sentry.release }}"><script src="{% static 'dist/sentry.js' %}" defer></script>{% endif %}
   <script src="{% static 'js/app.js' %}" defer></script>
   <script src="{% static 'js/confirm.js' %}" defer></script>
   <script src="{% static 'js/menu.js' %}" defer></script>

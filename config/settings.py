@@ -5,6 +5,8 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.csp import CSP
 
+from . import sentry
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -93,6 +95,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "django.template.context_processors.csp",
                 "accounts.context_processors.site_flags",
+                "config.sentry.browser_context",
             ],
         },
     },
@@ -236,6 +239,13 @@ TURNSTILE_SITE_KEY = env("TURNSTILE_SITE_KEY")
 TURNSTILE_SECRET_KEY = env("TURNSTILE_SECRET_KEY")
 TURNSTILE_ENABLED = bool(TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY)
 _CSP = csp_with_turnstile(_CSP, TURNSTILE_ENABLED)
+
+# Sentry error reporting (optional; only when SENTRY_DSN is set). Server side starts here; the browser bundle is
+# loaded by base.html and its events are allowed through the CSP below.
+SENTRY_DSN = env("SENTRY_DSN")
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", "production")
+sentry.init(SENTRY_DSN, SENTRY_ENVIRONMENT, float(env("SENTRY_TRACES_SAMPLE_RATE") or "0"))
+_CSP = sentry.csp_with_sentry(_CSP, SENTRY_DSN)
 
 if env("CSP_ENFORCE", "1") == "1":
     SECURE_CSP = _CSP

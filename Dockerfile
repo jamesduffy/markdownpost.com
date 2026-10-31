@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && if [ "$INSTALL_DEV" = "1" ]; then pip install --no-cache-dir -r requirements-dev.txt; fi
 COPY . .
 COPY --from=editor /out/editor.js static/dist/editor.js
+COPY --from=editor /out/sentry.js static/dist/sentry.js
 COPY --from=editor /out/rich static/dist/rich
 COPY --from=editor /out/fonts static/dist/fonts
 RUN SECRET_KEY=build python manage.py collectstatic --noinput \
