@@ -130,6 +130,7 @@ class ProtocolTests(McpBase):
             self.assertEqual(tools[name]["inputSchema"]["type"], "object")
             self.assertTrue(tools[name]["description"])
             self.assertIn("readOnlyHint", tools[name]["annotations"])
+        self.assertIn("featured", tools["update_post"]["inputSchema"]["properties"])
         self.assertNotIn("delete_post", tools)  # deliberately not offered
 
     def test_errors(self):
@@ -182,6 +183,17 @@ class PostToolTests(McpBase):
         self.assertTrue(self.ok("update_post", {"id": out["id"], "publish": False})["is_draft"])
         self.assertIn("only write drafts", self.err("update_post", {"id": out["id"], "publish": True}, key=self.draft_key))
         self.assertIn("Nothing to change", self.err("update_post", {"id": out["id"]}))
+
+    def test_featured_post_must_be_public_and_published(self):
+        first = self.ok("create_post", {"title": "A", "body": "one", "publish": True})
+        second = self.ok("create_post", {"title": "B", "body": "two", "publish": True})
+        self.assertTrue(self.ok("update_post", {"id": first["id"], "featured": True})["featured"])
+        self.assertTrue(self.ok("update_post", {"id": second["id"], "featured": True})["featured"])
+        self.assertFalse(self.ok("get_post", {"id": first["id"]})["featured"])
+        self.assertFalse(self.ok("update_post", {"id": second["id"], "publish": False})["featured"])
+        draft = self.ok("create_post", {"title": "Draft", "body": "text"})
+        self.assertIn("public, published", self.err("update_post", {"id": draft["id"], "featured": True}))
+        self.assertIn("featured", self.err("update_post", {"id": second["id"]}))
 
     def test_expected_updated_detects_conflicts(self):
         out = self.ok("create_post", {"title": "A", "body": "one"})
@@ -286,6 +298,26 @@ class ProfileAndThemeToolTests(McpBase):
         page = self.client.get("/@botty/").content.decode()
         self.assertIn("Botty&#x27;s Notes", page)
         self.assertIn("I am a bot.", page)
+
+    @override_settings(DISCOVERABLE_REQUIRE_VERIFIED_EMAIL=False, DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS=0)
+    def test_update_profile_recommendations_and_opt_out(self):
+        out = self.ok(
+            "update_profile",
+            {"recommendations": [{"username": "human", "note": "A good site"}], "allow_recommendations": False},
+        )
+        self.assertEqual(out["recommendations"], [{"username": "human", "note": "A good site"}])
+        self.assertFalse(out["allow_recommendations"])
+        page = self.client.get("/@botty/").content.decode()
+        self.assertIn('<a href="/@human/">@human</a>', page)
+        self.assertIn("A good site", page)
+
+        self.other.allow_recommendations = False
+        self.other.save(update_fields=["allow_recommendations"])
+        message = self.err("update_profile", {"recommendations": [{"username": "human"}]})
+        self.assertIn("doesn't allow recommendations", message)
+
+        too_many = [{"username": f"account{i}"} for i in range(9)]
+        self.assertIn("at most 8", self.err("update_profile", {"recommendations": too_many}))
 
     def test_profile_validation(self):
         self.assertIn("hidden or control", self.err("update_profile", {"tagline": "a‮b"}))

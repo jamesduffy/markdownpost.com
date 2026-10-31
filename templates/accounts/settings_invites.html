@@ -1,0 +1,32 @@
+{% extends "accounts/settings_base.html" %}
+{% block title %}Invites{% endblock %}
+{% block panel %}
+  <section class="field-group">
+    <h2>Invites</h2>
+    <p class="hint">Each link lets one person create an account, even when signups are closed. You have <strong>{{ user.invites_remaining }}</strong> invite{{ user.invites_remaining|pluralize }} left.</p>
+    {% if user.invites_remaining > 0 %}
+      <form method="post" class="settings-form">
+        {% csrf_token %}
+        <div class="form-actions"><button class="btn" type="submit">Create an invite link</button></div>
+      </form>
+    {% else %}
+      <p class="hint">You've used all your invites. <a href="/contact/">Get in touch</a> if you need more.</p>
+    {% endif %}
+  </section>
+  {% if invites %}
+    <section class="field-group">
+      <h2>Your links</h2>
+      <ul>
+        {% for inv in invites %}
+          <li>
+            {% if inv.is_used %}
+              Used by <a href="{% url 'profile' inv.used_by.username %}">@{{ inv.used_by.username }}</a> on {{ inv.used_at|date:"j M Y" }}
+            {% else %}
+              <label>Unused, copy and send: <input type="text" readonly value="{{ inv.url }}" size="48"></label>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+{% endblock %}

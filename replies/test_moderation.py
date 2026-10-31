@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Permission
+from django.contrib.admin.utils import quote
 from django.urls import reverse
 from django.utils import timezone
 
@@ -30,7 +31,7 @@ class ModerationActionTests(Base):
         self.assertEqual(c.get(self.url).status_code, 200)
         self.assertEqual(c.get(reverse("admin:moderation_report_change", args=[self.report.pk])).status_code, 200)
         self.assertEqual(c.get(reverse("admin:replies_reply_changelist")).status_code, 200)
-        self.assertEqual(c.get(reverse("admin:replies_reply_change", args=[self.reply.pk])).status_code, 200)
+        self.assertEqual(c.get(reverse("admin:replies_reply_change", args=[quote(self.reply.pk)])).status_code, 200)  # admin URLs escape "_" in ids
 
     def test_hide_and_restore_are_reversible_and_logged(self):
         self.act("hide_reported_reply")

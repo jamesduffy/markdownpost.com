@@ -1,4 +1,7 @@
+import secrets
+
 from django.contrib.auth.models import AbstractUser
+from django.db import transaction
 from django.db import models
 from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
@@ -21,6 +24,8 @@ class User(AbstractUser):
     is_agent = models.BooleanField(default=False)
     # Whether the "More from @you" list appears under your posts.
     show_related_posts = models.BooleanField(default=True)
+    # Other authors may include this site in their profile recommendations.
+    allow_recommendations = models.BooleanField(default=True)
     # Social fields hold canonical https URLs (see accounts/social.py); forms accept handles or URLs.
     website = models.URLField(max_length=200, blank=True)
     github = models.URLField(max_length=200, blank=True)
@@ -34,6 +39,9 @@ class User(AbstractUser):
     tagline = models.CharField(max_length=140, blank=True)
     # Markdown "home page" shown on the profile; rendered with the sanitizing post renderer.
     about_md = models.TextField(max_length=5000, blank=True)
+    # Invite allowance: how many more invite links this account may create. Starts at 3 (the column default also
+    # backfilled every existing account). Creating a link subtracts one; the owner adds more in the admin.
+    invites_remaining = models.PositiveIntegerField(default=3, help_text="How many more invite links this user can create.")
 
     class Meta(AbstractUser.Meta):
         constraints = [
@@ -56,6 +64,57 @@ class User(AbstractUser):
     @property
     def social_links(self):
         return social.links_for(self)
+
+
+class ProfileRecommendation(models.Model):
+    recommender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recommendation_entries")
+    recommended = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recommended_by")
+    note = models.CharField(max_length=140, blank=True)
+    position = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(fields=["recommender", "recommended"], name="unique_profile_recommendation"),
+            models.UniqueConstraint(fields=["recommender", "position"], name="unique_recommendation_position"),
+            models.CheckConstraint(condition=models.Q(position__gte=0, position__lt=8), name="recommendation_position_under_8"),
+        ]
+
+
+class NoInvitesLeft(Exception):
+    pass
+
+
+class Invite(models.Model):
+    """A single-use signup link. The code is the secret; whoever holds it can register once, even while signups are closed."""
+
+    code = models.CharField(max_length=64, unique=True, editable=False)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="invites_created")
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_by = models.OneToOneField(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="invite_used")
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Invite by {self.created_by} ({'used' if self.used_at else 'unused'})"
+
+    @property
+    def is_used(self):
+        return self.used_at is not None
+
+    @classmethod
+    def create_for(cls, user):
+        """Spend one of user's invites on a new link. Raises NoInvitesLeft when the allowance is used up."""
+        with transaction.atomic():
+            locked = User.objects.select_for_update().get(pk=user.pk)
+            if locked.invites_remaining < 1:
+                raise NoInvitesLeft
+            locked.invites_remaining -= 1
+            locked.save(update_fields=["invites_remaining"])
+            user.invites_remaining = locked.invites_remaining
+            return cls.objects.create(code=secrets.token_urlsafe(24), created_by=locked)
 
 
 class RateLimitEvent(models.Model):
