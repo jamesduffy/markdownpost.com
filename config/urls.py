@@ -7,6 +7,7 @@ from posts import views as post_views
 from .health import health
 
 urlpatterns = [
+    path("api/v1/", include("posts.api")),
     path("health/", health, name="health"),
     path("admin/", admin.site.urls),
     path("", include("accounts.urls")),

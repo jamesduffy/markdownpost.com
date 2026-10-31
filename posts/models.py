@@ -42,6 +42,14 @@ class Tag(models.Model):
         return reverse("tag_page", args=[self.slug])
 
 
+class ApiSnapshot(models.Model):
+    """Short-lived pagination order. Cursors disclose neither helpful ranks nor draft identifiers."""
+
+    id = models.CharField(max_length=64, primary_key=True)
+    post_ids = models.JSONField()
+    expires_at = models.DateTimeField(db_index=True)
+
+
 class Post(models.Model):
     class Visibility(models.TextChoices):
         PRIVATE = "private", "Private"
