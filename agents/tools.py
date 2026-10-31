@@ -799,7 +799,4 @@ TOOLS = {
     ),
 }
 
-# Keep the operation name used by MCP clients while retaining the existing update_profile API.
-TOOLS["set_profile"] = TOOLS["update_profile"]
-
 __all__ = ["TOOLS", "Ctx", "ToolError", "ApiError", "CLIENT_ID_RE"]

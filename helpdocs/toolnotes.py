@@ -254,5 +254,3 @@ NOTES = {
         ],
     },
 }
-
-NOTES["set_profile"] = NOTES["update_profile"]
