@@ -44,26 +44,43 @@
     </div>
   </header>
 
-  {% if featured_post %}
-    <section class="featured-post" aria-labelledby="featured-title">
-      <h2 class="section-title" id="featured-title">Featured</h2>
-      <article class="card theme-card">
-        <h2><a href="{{ featured_post.get_absolute_url }}">{{ featured_post.display_title }}</a></h2>
-        {% if featured_post.excerpt %}<p class="excerpt">{{ featured_post.excerpt }}</p>{% endif %}
-        <p class="meta"><time datetime="{{ featured_post.created_at|date:'c' }}">{{ featured_post.created_at|date:"M j, Y" }}</time></p>
-      </article>
-    </section>
-  {% endif %}
+  <div class="profile-layout{% if recommendations %} has-recommendations{% endif %}">
+    <div class="profile-main">
+      {% if featured_post %}
+        <section class="featured-post" aria-labelledby="featured-title">
+          <h2 class="section-title" id="featured-title">Featured</h2>
+          <article class="card theme-card">
+            <h2><a href="{{ featured_post.get_absolute_url }}">{{ featured_post.display_title }}</a></h2>
+            {% if featured_post.excerpt %}<p class="excerpt">{{ featured_post.excerpt }}</p>{% endif %}
+            <p class="meta"><time datetime="{{ featured_post.created_at|date:'c' }}">{{ featured_post.created_at|date:"M j, Y" }}</time></p>
+          </article>
+        </section>
+      {% endif %}
 
-  {% about_html owner as about %}
-  {% if about %}
-    <section class="about theme-card" aria-label="About"><div class="prose">{{ about }}</div></section>
-  {% elif owner.bio %}
-    <section class="about theme-card" aria-label="About"><p class="bio">{{ owner.bio }}</p></section>
-  {% endif %}
+      {% about_html owner as about %}
+      {% if about %}
+        <section class="about theme-card" aria-label="About"><div class="prose">{{ about }}</div></section>
+      {% elif owner.bio %}
+        <section class="about theme-card" aria-label="About"><p class="bio">{{ owner.bio }}</p></section>
+      {% endif %}
 
-  <section class="writing" aria-labelledby="writing-title">
-    {% if page.object_list %}<h2 class="section-title" id="writing-title">Writing</h2>{% endif %}
-    {% include "posts/_list.html" with empty_text="Nothing published here yet." hide_author=True %}
-  </section>
+      <section class="writing" aria-labelledby="writing-title">
+        {% if page.object_list %}<h2 class="section-title" id="writing-title">Writing</h2>{% endif %}
+        {% include "posts/_list.html" with empty_text="Nothing published here yet." hide_author=True %}
+      </section>
+    </div>
+    {% if recommendations %}
+      <aside class="card theme-card profile-sidebar" aria-labelledby="recommendations-title">
+        <h2 class="section-title" id="recommendations-title">Recommended sites</h2>
+        <ul class="recommendation-list">
+          {% for item in recommendations %}
+            <li>
+              <a href="{% url 'profile' item.recommended.username %}">{{ item.recommended.site_title|default:item.recommended.display_name }}</a>
+              {% if item.note %}<p>{{ item.note }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </aside>
+    {% endif %}
+  </div>
 {% endblock %}

@@ -299,6 +299,26 @@ class ProfileAndThemeToolTests(McpBase):
         self.assertIn("Botty&#x27;s Notes", page)
         self.assertIn("I am a bot.", page)
 
+    @override_settings(DISCOVERABLE_REQUIRE_VERIFIED_EMAIL=False, DISCOVERABLE_MIN_ACCOUNT_AGE_DAYS=0)
+    def test_update_profile_recommendations_and_opt_out(self):
+        out = self.ok(
+            "update_profile",
+            {"recommendations": [{"username": "human", "note": "A good site"}], "allow_recommendations": False},
+        )
+        self.assertEqual(out["recommendations"], [{"username": "human", "note": "A good site"}])
+        self.assertFalse(out["allow_recommendations"])
+        page = self.client.get("/@botty/").content.decode()
+        self.assertIn('<a href="/@human/">@human</a>', page)
+        self.assertIn("A good site", page)
+
+        self.other.allow_recommendations = False
+        self.other.save(update_fields=["allow_recommendations"])
+        message = self.err("update_profile", {"recommendations": [{"username": "human"}]})
+        self.assertIn("doesn't allow recommendations", message)
+
+        too_many = [{"username": f"account{i}"} for i in range(9)]
+        self.assertIn("at most 8", self.err("update_profile", {"recommendations": too_many}))
+
     def test_profile_validation(self):
         self.assertIn("hidden or control", self.err("update_profile", {"tagline": "a‮b"}))
         self.assertIn("at most 140", self.err("update_profile", {"tagline": "x" * 141}))

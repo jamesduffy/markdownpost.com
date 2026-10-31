@@ -24,7 +24,7 @@ from uploads import service as uploads_service
 
 from accounts import ratelimit
 
-from . import helpful, scheduling, seo, storage, tags
+from . import discovery, helpful, scheduling, seo, storage, tags
 from .models import Post, Tag
 from .service import CLIENT_ID_RE, EMAIL_NOT_CONFIRMED, PUBLISH_REFUSED_MESSAGE, ApiError, apply_fields, can_publish, clean_fields, lock_featured_author
 from .render import make_excerpt, render_document, render_document_cached
@@ -123,7 +123,12 @@ def profile(request, username):
     if featured_post:
         posts = posts.exclude(pk=featured_post.pk)
     page = _paginate(request, posts.select_related("author"))
-    return render(request, "posts/profile.html", {"owner": owner, "featured_post": featured_post, "page": page, "seo": seo.profile_seo(request, owner, page.number)})
+    recommendations = (
+        owner.recommendation_entries.select_related("recommended")
+        .filter(recommended__allow_recommendations=True)
+        .filter(discovery.author_q(prefix="recommended__"))
+    )
+    return render(request, "posts/profile.html", {"owner": owner, "featured_post": featured_post, "page": page, "seo": seo.profile_seo(request, owner, page.number), "recommendations": recommendations})
 
 
 def _visible_post(request, username, post_id):

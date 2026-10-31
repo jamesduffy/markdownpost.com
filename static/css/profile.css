@@ -22,8 +22,17 @@ a.chip:hover { text-decoration: none; border-color: var(--accent); }
 .writing .card h2 { font-size: var(--scale2); }
 .writing .card { margin-bottom: 0; }
 .profile-page .avatar.xl { width: 104px; height: 104px; }
+.profile-layout.has-recommendations { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 240px); gap: 24px; align-items: start; }
+.profile-main { min-width: 0; }
+.profile-sidebar { margin: 0; }
+.recommendation-list { list-style: none; margin: 0; padding: 0; }
+.recommendation-list li + li { margin-top: 12px; }
+.recommendation-list p { margin: 3px 0 0; color: var(--muted); font-size: var(--scale-1); }
 @media (max-width: 600px) {
   .profile-page { padding-top: 64px; }
   .profile-hero { flex-direction: column; gap: 14px; }
   .profile-page .avatar.xl { width: 80px; height: 80px; }
+}
+@media (max-width: 760px) {
+  .profile-layout.has-recommendations { grid-template-columns: minmax(0, 1fr); }
 }
