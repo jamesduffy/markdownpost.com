@@ -54,6 +54,7 @@ class Post(models.Model):
     visibility = models.CharField(max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE)
     # New posts start as drafts: visible only to their author, and in no list, until the author saves them.
     is_draft = models.BooleanField(default=True)
+    featured = models.BooleanField(default=False)
     # Short plain-text preview so list pages never need to touch object storage.
     excerpt = models.CharField(max_length=300, blank=True)
     # Plain-text copy of the start of the body (see SEARCH_TEXT_CHARS), so search can match words that aren't in the title or excerpt.
@@ -77,7 +78,14 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=["visibility", "-created_at"]),
         ]
-        constraints = [models.UniqueConstraint(fields=["author", "client_id"], name="unique_author_client_id")]
+        constraints = [
+            models.UniqueConstraint(fields=["author", "client_id"], name="unique_author_client_id"),
+            models.UniqueConstraint(fields=["author"], condition=models.Q(featured=True), name="one_featured_per_author"),
+            models.CheckConstraint(
+                condition=~models.Q(featured=True) | models.Q(visibility="public", is_draft=False),
+                name="featured_public_published",
+            ),
+        ]
 
     def __str__(self):
         return self.title or self.id

@@ -15,6 +15,7 @@ import { createToolbar } from "./toolbar.js";
 const root = document.getElementById("editor-root");
 const titleEl = document.getElementById("title");
 const visibilityEl = document.getElementById("visibility");
+const featuredEl = document.getElementById("featured");
 const statusEl = document.getElementById("status");
 const doneEl = document.getElementById("done");
 const backEl = document.getElementById("back");
@@ -66,6 +67,7 @@ const snapshot = (synced) => ({
   title: titleEl.value,
   body: view.state.doc.toString(),
   visibility: visibilityEl.value,
+  featured: featuredEl?.checked || false,
   tags: tagInput.get(),
   base: lastUpdated,
   publish: publishRequested,
@@ -100,6 +102,7 @@ async function flush() {
   timer = null;
   if (saving || !dirty || locked || conflict) return;
   const payload = { title: titleEl.value, body: view.state.doc.toString(), visibility: visibilityEl.value, tags: tagInput.get() };
+  if (featuredEl && !featuredEl.disabled) payload.featured = featuredEl.checked;
   const creating = !postId;
   if (creating) payload.client_id = clientIdFor(draftKey); // same id on every retry, so a lost response can't duplicate the post
   if (!postId && !payload.title.trim() && !payload.body.trim()) {
@@ -195,6 +198,7 @@ function adoptSaved(data) {
   }
   viewUrl = data.url;
   lastUpdated = data.updated;
+  if (!dirty && typeof data.featured === "boolean" && featuredEl) featuredEl.checked = data.featured;
 }
 
 // Calm notice when publishing was refused because the email isn't confirmed yet. The text is safe on the server as a draft.
@@ -230,6 +234,7 @@ const savedLabel = () => (isDraft && scheduler.active() ? `Scheduled for ${sched
 
 function updateButtons() {
   doneEl.textContent = isDraft && scheduler.active() ? "Publish now" : primaryLabel({ isDraft, visibility: visibilityEl.value });
+  if (featuredEl) featuredEl.disabled = isDraft || visibilityEl.value !== "public";
   // "←" goes back to the post once it is published, and to the drafts list while it is still a draft.
   if (backEl) {
     backEl.href = (isDraft ? "/drafts/" : viewUrl) || "/drafts/";
@@ -290,11 +295,12 @@ document.addEventListener("click", (e) => {
 
 // ---- restoring + conflicts -------------------------------------------------------
 
-function applyContent({ title, body, visibility, tags }) {
+function applyContent({ title, body, visibility, tags, featured }) {
   titleEl.value = title ?? "";
   if (tags) tagInput.set(tags);
   growTitle();
   if (visibility) visibilityEl.value = visibility;
+  if (typeof featured === "boolean" && featuredEl) featuredEl.checked = featured;
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: body ?? "" } });
 }
 
@@ -367,7 +373,7 @@ function restore() {
   editUrl = editUrl || local.editUrl || null;
   const localBase = local.base ? Date.parse(local.base) : 0;
   const serverBase = lastUpdated ? Date.parse(lastUpdated) : 0;
-  const differs = local.body !== view.state.doc.toString() || local.title !== titleEl.value || (local.tags && local.tags.join() !== tagsKey());
+  const differs = local.body !== view.state.doc.toString() || local.title !== titleEl.value || (local.tags && local.tags.join() !== tagsKey()) || (typeof local.featured === "boolean" && local.featured !== featuredEl?.checked);
   if (!postId || localBase > serverBase || (localBase === serverBase && !local.synced)) {
     // This device has the newest copy (typed offline, or the page came from the offline cache).
     lastUpdated = local.base || lastUpdated;
@@ -502,6 +508,7 @@ document.addEventListener("mousedown", (e) => {
 });
 
 visibilityEl.addEventListener("change", () => (updateButtons(), schedule(), flush()));
+featuredEl?.addEventListener("change", () => (schedule(), flush()));
 updateButtons();
 if (isDraft && scheduler.active()) setStatus(savedLabel());
 
