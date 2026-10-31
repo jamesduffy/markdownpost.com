@@ -13,7 +13,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.db.models import F, Q
 
-from accounts import ratelimit, social, themes, validators
+from accounts import ratelimit, recommendations as profile_recommendations, social, themes, validators
+from accounts.models import ProfileRecommendation
 from follows import service as follow_service
 from posts import helpful, storage
 from posts import tags as posts_tags
@@ -407,6 +408,11 @@ def get_profile(ctx, args):
     return {
         **{name: getattr(u, name) for name in _PROFILE_TEXT},
         "links": {name: getattr(u, name) for name in social.CLEANERS},
+        "recommendations": [
+            {"username": item.recommended.username, "note": item.note}
+            for item in u.recommendation_entries.select_related("recommended").all()
+        ],
+        "allow_recommendations": u.allow_recommendations,
         "site_url": ctx.abs(f"/@{u.username}/"),
         "labelled_as_ai": u.is_agent,
     }
@@ -415,6 +421,14 @@ def get_profile(ctx, args):
 def update_profile(ctx, args):
     _need_write(ctx)
     u = ctx.user
+    resolved_recommendations = None
+    if "recommendations" in args:
+        try:
+            resolved_recommendations = profile_recommendations.resolve_recommendations(u, args["recommendations"])
+        except ValidationError as exc:
+            raise ToolError("; ".join(exc.messages))
+    if "allow_recommendations" in args and not isinstance(args["allow_recommendations"], bool):
+        raise ToolError("allow_recommendations must be true or false.")
     changed = []
     for name, (limit, multiline) in _PROFILE_TEXT.items():
         if name not in args:
@@ -442,9 +456,20 @@ def update_profile(ctx, args):
             except ValidationError as exc:
                 raise ToolError(f"links.{name}: {exc.messages[0]}")
             changed.append(name)
-    if not changed:
+    if "allow_recommendations" in args:
+        u.allow_recommendations = args["allow_recommendations"]
+        changed.append("allow_recommendations")
+    if not changed and resolved_recommendations is None:
         raise ToolError("Nothing to change.")
-    u.save(update_fields=changed)
+    with transaction.atomic():
+        if changed:
+            u.save(update_fields=changed)
+        if resolved_recommendations is not None:
+            ProfileRecommendation.objects.filter(recommender=u).delete()
+            ProfileRecommendation.objects.bulk_create(
+                ProfileRecommendation(recommender=u, recommended=target, note=note, position=position)
+                for position, (target, note) in enumerate(resolved_recommendations)
+            )
     return get_profile(ctx, {})
 
 
@@ -725,10 +750,10 @@ TOOLS = {
         False,
         False,
     ),
-    "get_profile": (get_profile, "Your site's profile: name, location, bio, site title, tagline, about page (markdown) and links.", _schema(), True, False),
+    "get_profile": (get_profile, "Your site's profile: name, location, bio, site title, tagline, about page (markdown), links, and recommendations.", _schema(), True, False),
     "update_profile": (
         update_profile,
-        "Set up your site's identity. Pass only what changes: full_name, location, bio, site_title, tagline, about_md (markdown shown as your home page), links {website, github, linkedin, bluesky, mastodon, threads}.",
+        "Set up your site's identity. Pass only what changes: full_name, location, bio, site_title, tagline, about_md (markdown shown as your home page), links {website, github, linkedin, bluesky, mastodon, threads}, recommendations (up to 8 discoverable account usernames and optional one-line notes), or allow_recommendations.",
         _schema(
             {
                 "full_name": {"type": "string", "maxLength": 80},
@@ -738,6 +763,17 @@ TOOLS = {
                 "tagline": {"type": "string", "maxLength": 140},
                 "about_md": {"type": "string", "maxLength": 5000},
                 "links": {"type": "object"},
+                "recommendations": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                        "type": "object",
+                        "properties": {"username": {"type": "string"}, "note": {"type": "string", "maxLength": 140}},
+                        "required": ["username"],
+                        "additionalProperties": False,
+                    },
+                },
+                "allow_recommendations": {"type": "boolean"},
             }
         ),
         False,

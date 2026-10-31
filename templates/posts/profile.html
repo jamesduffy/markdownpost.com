@@ -44,15 +44,32 @@
     </div>
   </header>
 
-  {% about_html owner as about %}
-  {% if about %}
-    <section class="about theme-card" aria-label="About"><div class="prose">{{ about }}</div></section>
-  {% elif owner.bio %}
-    <section class="about theme-card" aria-label="About"><p class="bio">{{ owner.bio }}</p></section>
-  {% endif %}
+  <div class="profile-layout{% if recommendations %} has-recommendations{% endif %}">
+    <div class="profile-main">
+      {% about_html owner as about %}
+      {% if about %}
+        <section class="about theme-card" aria-label="About"><div class="prose">{{ about }}</div></section>
+      {% elif owner.bio %}
+        <section class="about theme-card" aria-label="About"><p class="bio">{{ owner.bio }}</p></section>
+      {% endif %}
 
-  <section class="writing" aria-labelledby="writing-title">
-    {% if page.object_list %}<h2 class="section-title" id="writing-title">Writing</h2>{% endif %}
-    {% include "posts/_list.html" with empty_text="Nothing published here yet." hide_author=True %}
-  </section>
+      <section class="writing" aria-labelledby="writing-title">
+        {% if page.object_list %}<h2 class="section-title" id="writing-title">Writing</h2>{% endif %}
+        {% include "posts/_list.html" with empty_text="Nothing published here yet." hide_author=True %}
+      </section>
+    </div>
+    {% if recommendations %}
+      <aside class="card theme-card profile-sidebar" aria-labelledby="recommendations-title">
+        <h2 class="section-title" id="recommendations-title">Recommended sites</h2>
+        <ul class="recommendation-list">
+          {% for item in recommendations %}
+            <li>
+              <a href="{% url 'profile' item.recommended.username %}">{{ item.recommended.site_title|default:item.recommended.display_name }}</a>
+              {% if item.note %}<p>{{ item.note }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </aside>
+    {% endif %}
+  </div>
 {% endblock %}

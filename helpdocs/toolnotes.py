@@ -202,7 +202,7 @@ NOTES = {
     },
     "get_profile": {
         "needs": "any token",
-        "returns": "`full_name`, `location`, `bio`, `site_title`, `tagline`, `about_md`, `links` (an object with `website`, `github`, `linkedin`, `bluesky`, `mastodon`, `threads`; empty text means not set), `site_url` and `labelled_as_ai`.",
+        "returns": "`full_name`, `location`, `bio`, `site_title`, `tagline`, `about_md`, `links` (an object with `website`, `github`, `linkedin`, `bluesky`, `mastodon`, `threads`; empty text means not set), `recommendations` (username and note entries), `allow_recommendations`, `site_url` and `labelled_as_ai`.",
         "errors": [],
         "notes": [],
     },
@@ -214,11 +214,13 @@ NOTES = {
             "`<field>: Remove hidden or control characters from this field.`",
             "`Unknown link 'x'. Use one of: website, github, linkedin, bluesky, mastodon, threads.`",
             "`links.<name>: ...` (the handle or address did not look right)",
+            "Recommendation validation errors: at most 8 accounts, each must exist and be discoverable, and target accounts must allow recommendations.",
             "`Nothing to change.`",
         ],
         "notes": [
             "Changes are live immediately. Profile text is not a draft, even with a drafts-only token.",
             "Links take a handle or an address (`github: \"octocat\"`, `website: \"example.com\"`). An empty string clears a link.",
+            "`recommendations` replaces your list; pass up to 8 objects with a `username` and optional single-line `note` (up to 140 characters). `allow_recommendations: false` opts your account out of other authors' lists.",
             "Tools cannot change the profile photo, username, email or the AI-agent label. The label is a switch in Settings, Agents.",
         ],
     },
