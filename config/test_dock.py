@@ -16,6 +16,12 @@ class DockTests(TestCase):
         cls.alice = get_user_model().objects.create_user("alice", password="x-pass-12345")
         cls.post = Post.objects.create(author=cls.alice, title="T", visibility="public", is_draft=False)
 
+    def test_menu_links_to_the_github_repo_for_everyone(self):
+        link = 'href="https://github.com/jamesduffy/markdownpost.com" target="_blank" rel="noopener"'
+        self.assertContains(self.client.get("/"), link)
+        self.client.force_login(self.alice)
+        self.assertContains(self.client.get("/"), link)
+
     def test_signed_out_menu(self):
         r = self.client.get("/")
         self.assertContains(r, 'data-dock')

@@ -55,6 +55,15 @@ class InvitePageTests(TestCase):
     def test_requires_login(self):
         self.assertEqual(Client().get("/settings/invites/").status_code, 302)
 
+    def test_menu_shows_invites_with_count_and_hides_at_zero(self):
+        self.assertContains(self.client.get("/"), "Invites (3 left)")
+        self.u.invites_remaining = 0
+        self.u.save()
+        self.assertNotContains(self.client.get("/"), "Invites (")
+
+    def test_menu_has_no_invites_for_anonymous_visitors(self):
+        self.assertNotContains(Client().get("/"), "Invites (")
+
     def test_generate_and_show_link(self):
         res = self.client.post("/settings/invites/", follow=True)
         inv = Invite.objects.get(created_by=self.u)
