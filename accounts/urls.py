@@ -21,6 +21,7 @@ urlpatterns = [
     path("welcome/done/", onboarding.done, name="onboarding_done"),
     path("settings/", views.settings_profile, name="settings_profile"),
     path("settings/account/", views.settings_account, name="settings_account"),
+    path("settings/invites/", views.settings_invites, name="settings_invites"),
     path("settings/theme/", views.settings_theme, name="settings_theme"),
     path("settings/theme/random/", views.theme_random, name="theme_random"),
     path("settings/password/", views.PasswordChange.as_view(), name="password_change"),
