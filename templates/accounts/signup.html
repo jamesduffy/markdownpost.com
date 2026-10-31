@@ -9,6 +9,7 @@
   <p class="lede">Your site will be at <strong class="site-addr">{{ host }}/@yourname/</strong>, with your username in place of <em>yourname</em>.</p>
   <form method="post" class="stack">
     {% csrf_token %}
+    {% if invite_code %}<input type="hidden" name="invite" value="{{ invite_code }}">{% endif %}
     {{ form.non_field_errors }}
     {% for field in form %}
       <label>{{ field.label }} {{ field }}

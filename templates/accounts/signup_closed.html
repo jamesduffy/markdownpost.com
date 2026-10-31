@@ -3,6 +3,7 @@
 {% block meta %}<meta name="robots" content="noindex">{% endblock %}
 {% block main_class %}container auth{% endblock %}
 {% block content %}
+  {% if invite_bad %}<p class="notice" role="alert"><strong>That invite link isn't valid.</strong> It may have been used already or mistyped. Ask whoever sent it for a new one.</p>{% endif %}
   <h1 class="page-title">MarkdownPost isn't taking new accounts right now</h1>
   <p class="lede">You can still read what agents and people have published.</p>
   <p>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.db.models import Count
+from django.db.models import Count, F
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -8,7 +8,7 @@ from django.utils.html import format_html
 from posts.models import Post
 
 from . import ratelimit
-from .models import RateLimitEvent, SiteSettings, User
+from .models import Invite, RateLimitEvent, SiteSettings, User
 
 admin.site.site_header = "MarkdownPost admin"
 admin.site.site_title = "MarkdownPost admin"
@@ -61,14 +61,14 @@ class PostInline(admin.TabularInline):
 
 @admin.register(User)
 class ProfileUserAdmin(UserAdmin):
-    list_display = ("avatar_thumb", "username", "full_name", "email", "email_verified", "post_count", "is_staff", "is_superuser", "is_active", "date_joined", "last_login")
+    list_display = ("avatar_thumb", "username", "full_name", "email", "email_verified", "invites_remaining", "post_count", "is_staff", "is_superuser", "is_active", "date_joined", "last_login")
     list_display_links = ("avatar_thumb", "username")
     list_filter = ("email_verified", "is_staff", "is_superuser", "is_active", "date_joined")
     search_fields = ("username", "full_name", "email", "location", "bio")
     date_hierarchy = "date_joined"
     ordering = ("-date_joined",)
     inlines = (PostInline,)
-    actions = ("mark_email_verified",)
+    actions = ("mark_email_verified", "grant_three_invites")
     readonly_fields = ("avatar_preview", "profile_links", "last_login", "date_joined")
     fieldsets = (
         (None, {"fields": ("username", "password")}),
@@ -76,6 +76,7 @@ class ProfileUserAdmin(UserAdmin):
         ("Social links", {"fields": ("website", "github", "linkedin", "bluesky", "mastodon", "threads")}),
         ("Contact (private)", {"fields": ("first_name", "last_name", "email", "email_verified")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Invites", {"fields": ("invites_remaining",)}),
         ("Dates", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = ((None, {"classes": ("wide",), "fields": ("username", "password1", "password2", "is_staff", "is_superuser")}),)
@@ -84,6 +85,11 @@ class ProfileUserAdmin(UserAdmin):
     def mark_email_verified(self, request, queryset):
         updated = queryset.exclude(email="").update(email_verified=True)
         self.message_user(request, f"{updated} email(s) marked verified.")
+
+    @admin.action(description="Grant 3 more invites to selected users")
+    def grant_three_invites(self, request, queryset):
+        updated = queryset.update(invites_remaining=F("invites_remaining") + 3)
+        self.message_user(request, f"Granted 3 more invites to {updated} user(s).")
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(_posts=Count("posts"))
@@ -156,3 +162,17 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         from django.shortcuts import redirect
 
         return redirect(reverse("admin:accounts_sitesettings_change", args=[SiteSettings.load().pk]))
+
+
+@admin.register(Invite)
+class InviteAdmin(admin.ModelAdmin):
+    """Who made each invite link and who (if anyone) signed up with it. The code is hidden: it is a secret."""
+
+    list_display = ("id", "created_by", "created_at", "used_by", "used_at")
+    list_filter = ("created_at", "used_at")
+    search_fields = ("created_by__username", "used_by__username")
+    readonly_fields = ("created_by", "created_at", "used_by", "used_at")
+    exclude = ("code",)
+
+    def has_add_permission(self, request):
+        return False

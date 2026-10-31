@@ -5,16 +5,18 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetView
+from django.db import transaction
+from django.utils import timezone
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
 
 from posts import storage
 
 from . import avatars, export, ratelimit, themes, turnstile
 from . import emailverify
-from .models import registration_open
+from .models import Invite, NoInvitesLeft, registration_open
 from .forms import EmailForm, ProfileForm, SignupForm, ThemeForm, VerifiedEmailPasswordResetForm
 
 
@@ -72,9 +74,16 @@ class RateLimitedLoginView(LoginView):
 def signup(request):
     if request.user.is_authenticated:
         return redirect("new_post")
-    if not registration_open():
-        return render(request, "accounts/signup_closed.html")
+    # While signups are closed, a valid unused invite code (?invite=... or the form's hidden field) lets one person in.
+    # While they are open the code is ignored and stays unused.
+    open_ = registration_open()
+    code = request.POST.get("invite") or request.GET.get("invite") or ""
+    invite_ok = bool(code) and Invite.objects.filter(code=code, used_at__isnull=True).exists()
+    if not open_ and not invite_ok:
+        return render(request, "accounts/signup_closed.html", {"invite_bad": bool(code)})
+    invite_code = code if not open_ else ""
     form = SignupForm(request.POST or None)
+    ctx = {"host": request.get_host(), "invite_code": invite_code, **turnstile.context()}
     if request.method == "POST":
         ip = ratelimit.client_ip(request)
         window = settings.SIGNUP_LIMIT_WINDOW
@@ -85,9 +94,22 @@ def signup(request):
             ok, error = turnstile.verify(request)
             if not ok:
                 form = SignupForm(initial={"username": request.POST.get("username", ""), "email": request.POST.get("email", "")})
-                return render(request, "accounts/signup.html", {"form": form, "host": request.get_host(), "turnstile_error": error, **turnstile.context()})
+                return render(request, "accounts/signup.html", {"form": form, "turnstile_error": error, **ctx})
+        user = None
         if form.is_valid():
-            user = form.save()
+            if open_:
+                user = form.save()
+            else:
+                # Lock the invite row so two simultaneous signups cannot both spend one link.
+                with transaction.atomic():
+                    invite = Invite.objects.select_for_update().filter(code=invite_code, used_at__isnull=True).first()
+                    if invite is None:
+                        return render(request, "accounts/signup_closed.html", {"invite_bad": True})
+                    user = form.save()
+                    invite.used_by = user
+                    invite.used_at = timezone.now()
+                    invite.save(update_fields=["used_by", "used_at"])
+        if user:
             login(request, user)
             if user.email:
                 # Best effort: a mail problem must never block someone from getting an account.
@@ -96,7 +118,22 @@ def signup(request):
                 else:
                     messages.warning(request, "Your account is ready, but we couldn't send the confirmation email. You can resend it in Settings, Account.")
             return redirect("onboarding_site")
-    return render(request, "accounts/signup.html", {"form": form, "host": request.get_host(), **turnstile.context()})
+    return render(request, "accounts/signup.html", {"form": form, **ctx})
+
+
+@login_required
+def settings_invites(request):
+    if request.method == "POST":
+        try:
+            Invite.create_for(request.user)
+            messages.success(request, "Invite link created. Copy it below and send it to one person.")
+        except NoInvitesLeft:
+            messages.error(request, "You have no invites left.")
+        return redirect("settings_invites")
+    invites = list(request.user.invites_created.select_related("used_by"))
+    for inv in invites:
+        inv.url = request.build_absolute_uri(f"{reverse('signup')}?invite={inv.code}")
+    return render(request, "accounts/settings_invites.html", {"tab": "account", "invites": invites})
 
 
 # ---- settings ---------------------------------------------------------------
