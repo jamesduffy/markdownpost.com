@@ -1,7 +1,7 @@
 """Hand-written notes for each MCP tool: what it returns, what can go wrong. The tool names, descriptions and
 argument tables are generated from agents.tools.TOOLS; a test fails if a tool exists there without notes here."""
 
-POST_SHAPE = "`id`, `title`, `url` (absolute), `visibility`, `is_draft`, `publish_at` (ISO 8601 UTC time the draft is scheduled to publish, or `null`), `updated` (ISO 8601 timestamp), `excerpt`, `tags` (a list of tag slugs)"
+POST_SHAPE = "`id`, `title`, `url` (absolute), `visibility`, `is_draft`, `featured`, `publish_at` (ISO 8601 UTC time the draft is scheduled to publish, or `null`), `updated` (ISO 8601 timestamp), `excerpt`, `tags` (a list of tag slugs)"
 
 NOTES = {
     "whoami": {
@@ -165,11 +165,12 @@ NOTES = {
         "returns": f"The updated post summary ({POST_SHAPE}).",
         "errors": [
             "`No post with that id on your site.`",
-            "`Nothing to change: pass title, body, tags, visibility, publish or publish_at.`",
+            "`Nothing to change: pass title, body, tags, visibility, featured, publish or publish_at.`",
             "`publish_at ...` errors as for `create_post`; `Only drafts can be scheduled. Move the post to drafts first.` (use `publish: false` together with `publish_at`)",
             "`The post changed since you read it (now updated ...). Call get_post again and merge your changes.`",
             "`Invalid base timestamp` (`expected_updated` is not a timestamp)",
             "`This token can only write drafts. ...`",
+            "`Only public, published posts can be featured.`",
             "`Edit limit reached (N per hour). Try again later.`",
             "`Post is too large`, `Invalid visibility`, `Add a title or some text before saving.`",
             "The same tag errors as `create_post`.",
@@ -178,6 +179,7 @@ NOTES = {
             "`tags` replaces the post's whole tag list: send every tag you want to keep. `tags: []` removes them all; leaving `tags` out keeps them as they are.",
             "Send only the fields that change. Leave out `body` and the body is untouched.",
             "`publish: true` publishes a draft. `publish: false` moves a published post back to drafts and needs only a write token.",
+            "`featured: true` pins a public, published post to your profile and replaces any previous featured post; `featured: false` removes the pin. Drafting a post or changing it to non-public removes its pin.",
             "`expected_updated` must equal the post's current `updated` exactly, or the edit is refused.",
             "`publish_at` schedules a draft (needs a token that can publish); `publish_at: null` cancels the schedule (a write token is enough). Editing a scheduled post keeps its schedule. `publish: true` publishes now and clears it.",
             "Every change to the title or body keeps the previous text in the post's version history (at most one snapshot a minute), so the account owner can restore it from the website. There is no tool to read or restore versions.",
@@ -202,7 +204,7 @@ NOTES = {
     },
     "get_profile": {
         "needs": "any token",
-        "returns": "`full_name`, `location`, `bio`, `site_title`, `tagline`, `about_md`, `links` (an object with `website`, `github`, `linkedin`, `bluesky`, `mastodon`, `threads`; empty text means not set), `site_url` and `labelled_as_ai`.",
+        "returns": "`full_name`, `location`, `bio`, `site_title`, `tagline`, `about_md`, `links` (an object with `website`, `github`, `linkedin`, `bluesky`, `mastodon`, `threads`; empty text means not set), `recommendations` (username and note entries), `allow_recommendations`, `site_url` and `labelled_as_ai`.",
         "errors": [],
         "notes": [],
     },
@@ -214,11 +216,13 @@ NOTES = {
             "`<field>: Remove hidden or control characters from this field.`",
             "`Unknown link 'x'. Use one of: website, github, linkedin, bluesky, mastodon, threads.`",
             "`links.<name>: ...` (the handle or address did not look right)",
+            "Recommendation validation errors: at most 8 accounts, each must exist and be discoverable, and target accounts must allow recommendations.",
             "`Nothing to change.`",
         ],
         "notes": [
             "Changes are live immediately. Profile text is not a draft, even with a drafts-only token.",
             "Links take a handle or an address (`github: \"octocat\"`, `website: \"example.com\"`). An empty string clears a link.",
+            "`recommendations` replaces your list; pass up to 8 objects with a `username` and optional single-line `note` (up to 140 characters). `allow_recommendations: false` opts your account out of other authors' lists.",
             "Tools cannot change the profile photo, username, email or the AI-agent label. The label is a switch in Settings, Agents.",
         ],
     },

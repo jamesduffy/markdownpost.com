@@ -28,6 +28,7 @@
       <option value="unlisted"{% if post.visibility == 'unlisted' %} selected{% endif %}>Unlisted</option>
       <option value="private"{% if post.visibility == 'private' %} selected{% endif %}>Private</option>
     </select>
+    <label class="featured-control"><input id="featured" type="checkbox"{% if post.featured %} checked{% endif %}{% if not post or post.is_draft or post.visibility != 'public' %} disabled{% endif %}> Featured</label>
     <details class="schedule-menu" id="schedule-menu">
       <summary class="btn ghost small" aria-label="Schedule publication">Schedule</summary>
       <div class="schedule-pop">
@@ -46,7 +47,7 @@
 {% endblock %}
 {% block main_class %}editor-page{% endblock %}
 {% block content %}
-  <div id="editor-root" data-post-id="{{ post.id|default:'' }}" data-view-url="{% if post %}{{ post.get_absolute_url }}{% endif %}" data-csrf="{{ csrf_token }}" data-user="{{ user.pk }}" data-draft="{% if not post or post.is_draft %}1{% endif %}" data-updated="{{ post.updated_at.isoformat|default:'' }}" data-publish-at="{% if post.is_draft %}{{ post.publish_at.isoformat|default:'' }}{% endif %}">
+  <div id="editor-root" data-post-id="{{ post.id|default:'' }}" data-view-url="{% if post %}{{ post.get_absolute_url }}{% endif %}" data-csrf="{{ csrf_token }}" data-user="{{ user.pk }}" data-draft="{% if not post or post.is_draft %}1{% endif %}" data-featured="{% if post.featured %}1{% endif %}" data-updated="{{ post.updated_at.isoformat|default:'' }}" data-publish-at="{% if post.is_draft %}{{ post.publish_at.isoformat|default:'' }}{% endif %}">
     <textarea id="title" rows="1" placeholder="Untitled" aria-label="Title" maxlength="200" autocomplete="off">{{ post.title }}</textarea>
     <div id="tags" class="tag-input">
       <ul class="tag-chips" aria-label="Tags"></ul>

@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
+from django.db import transaction
 
-from . import avatars, social, themes
-from .models import User
+from . import avatars, recommendations, social, themes
+from .models import ProfileRecommendation, User
 from .validators import validate_plain_text, validate_username
 
 
@@ -48,8 +49,8 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("site_title", "tagline", "about_md", "full_name", "location", "bio", "website", "github", "linkedin", "bluesky", "mastodon", "threads", "show_related_posts")
-        labels = {"site_title": "Site title", "tagline": "Tagline", "about_md": "About (shown on your home page)", "full_name": "Full name", "bio": "Bio", "github": "GitHub", "linkedin": "LinkedIn", "show_related_posts": "Show related posts at the end of my posts"}
+        fields = ("site_title", "tagline", "about_md", "full_name", "location", "bio", "website", "github", "linkedin", "bluesky", "mastodon", "threads", "show_related_posts", "allow_recommendations")
+        labels = {"site_title": "Site title", "tagline": "Tagline", "about_md": "About (shown on your home page)", "full_name": "Full name", "bio": "Bio", "github": "GitHub", "linkedin": "LinkedIn", "show_related_posts": "Show related posts at the end of my posts", "allow_recommendations": "Allow others to recommend my site"}
         widgets = {
             "site_title": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "My corner of the internet"}),
             "tagline": forms.TextInput(attrs={"autocomplete": "off", "placeholder": "Notes on code, coffee and other things"}),
@@ -84,6 +85,59 @@ class ProfileForm(forms.ModelForm):
             if self.instance.pk and getattr(self.instance, name):
                 # Show what they'd recognise (the handle), not the stored URL.
                 self.initial[name] = social.handle_for(name, getattr(self.instance, name))
+        if "allow_recommendations" in self.fields:
+            from posts.discovery import user_is_discoverable
+
+            existing = []
+            if self.instance.pk:
+                existing = [
+                    item
+                    for item in self.instance.recommendation_entries.select_related("recommended").all()
+                    if item.recommended.allow_recommendations and user_is_discoverable(item.recommended)
+                ]
+            self.recommendation_fields = []
+            self.recommendation_slots = []
+            for position in range(recommendations.MAX_RECOMMENDATIONS):
+                account_name = f"recommendation_{position + 1}"
+                note_name = f"recommendation_note_{position + 1}"
+                item = existing[position] if position < len(existing) else None
+                self.fields[account_name] = forms.CharField(
+                    required=False,
+                    max_length=150,
+                    label=f"Account {position + 1}",
+                    widget=forms.TextInput(attrs={"placeholder": "@username", "autocomplete": "off", "autocapitalize": "none", "spellcheck": "false"}),
+                )
+                self.fields[note_name] = forms.CharField(
+                    required=False,
+                    max_length=recommendations.MAX_NOTE_LENGTH,
+                    label=f"Note {position + 1}",
+                    widget=forms.TextInput(attrs={"maxlength": recommendations.MAX_NOTE_LENGTH, "placeholder": "A short note (optional)"}),
+                )
+                self.recommendation_fields.append((account_name, note_name))
+                self.recommendation_slots.append((self[account_name], self[note_name]))
+                if item:
+                    self.initial[account_name] = item.recommended.username
+                    self.initial[note_name] = item.note
+
+    def clean(self):
+        data = super().clean()
+        if not hasattr(self, "recommendation_fields") or self.errors:
+            return data
+        values = []
+        for account_name, note_name in self.recommendation_fields:
+            username = (data.get(account_name) or "").strip()
+            note = (data.get(note_name) or "").strip()
+            if username:
+                values.append({"username": username, "note": note})
+            elif note:
+                self.add_error(note_name, "Add an account for this note.")
+        if self.errors:
+            return data
+        try:
+            self.cleaned_recommendations = recommendations.resolve_recommendations(self.instance, values)
+        except forms.ValidationError as exc:
+            self.add_error(None, exc)
+        return data
 
     def clean_site_title(self):
         return validate_plain_text(self.cleaned_data["site_title"]).strip()
@@ -140,7 +194,14 @@ class ProfileForm(forms.ModelForm):
         elif self.cleaned_data.get("remove_avatar"):
             user.avatar_key = ""
         if commit:
-            user.save()
+            with transaction.atomic():
+                user.save()
+                if hasattr(self, "recommendation_fields"):
+                    ProfileRecommendation.objects.filter(recommender=user).delete()
+                    ProfileRecommendation.objects.bulk_create(
+                        ProfileRecommendation(recommender=user, recommended=target, note=note, position=position)
+                        for position, (target, note) in enumerate(self.cleaned_recommendations)
+                    )
             if old_key and old_key != user.avatar_key:
                 avatars.delete(old_key)
         return user

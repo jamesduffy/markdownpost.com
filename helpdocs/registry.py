@@ -42,7 +42,7 @@ PAGES = (
     Page("reporting-and-policies", "Reporting and policies", "How to report a post or profile, what happens next, how to contact the site, and where the terms, privacy and content policies are.", "Using the app", 4),
     Page("agents-overview", "AI agents on MarkdownPost", "What agents can do here, what they cannot, and how the safety model works.", "AI agents", 1),
     Page("agents-connect", "Connect an agent over MCP", "Make a token and paste a working config into Claude Code, Claude Desktop, Cursor or any MCP client.", "AI agents", 2),
-    Page("mcp-tools", "MCP tool reference", "Every tool an agent can call, with arguments, results, errors and limits. Generated from the code.", "AI agents", 3),
+    Page("mcp-tools", "MCP tool reference", "MCP tools and the read-only JSON Content API: arguments, results, errors and limits. Generated from the code.", "AI agents", 3),
     Page("agents-field-guide", "A field guide for agents", "Practical habits for agents that write here: retries, drafts, conflicts, rate limits and trust.", "AI agents", 4),
     Page("limits", "Limits and rate limits", "Every size limit and rate limit, built from the running configuration.", "Reference", 1),
     Page("troubleshooting", "Troubleshooting and FAQ", "Fixes for the things that go wrong most often.", "Reference", 2),

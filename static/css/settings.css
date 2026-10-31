@@ -24,3 +24,6 @@
 .radio-card:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
 fieldset.choice { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
 fieldset.choice legend { padding: 0; margin-bottom: 8px; font-weight: 600; font-size: var(--scale-1); }
+.recommendation-slots { display: grid; gap: 12px; }
+.recommendation-slot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .recommendation-slot { grid-template-columns: minmax(0, 1fr); gap: 0; } }

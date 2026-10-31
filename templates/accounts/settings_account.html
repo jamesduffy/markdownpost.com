@@ -43,6 +43,11 @@
     </form>
   </section>
 
+  <section class="field-group">
+    <h2>Invites</h2>
+    <p class="hint">Invite people to MarkdownPost with a personal single-use link. You have <strong>{{ user.invites_remaining }}</strong> left. <a href="{% url 'settings_invites' %}">Manage invites</a></p>
+  </section>
+
   <section class="field-group danger-zone">
     <h2>Delete account</h2>
     <p class="hint">This permanently deletes your profile and every post you've written. It can't be undone.</p>

@@ -48,6 +48,20 @@
     </section>
 
     <section class="field-group">
+      <h2>Recommendations</h2>
+      <label class="check">{{ form.allow_recommendations }} {{ form.allow_recommendations.label }}</label>
+      <p class="hint">You can list up to eight discoverable accounts on your page. Accounts that opt out won't appear. Add a username and an optional one-line note for each site.</p>
+      <div class="recommendation-slots">
+        {% for account, note in form.recommendation_slots %}
+          <div class="recommendation-slot">
+            <label>{{ account.label }} {{ account }} {{ account.errors }}</label>
+            <label>{{ note.label }} {{ note }} {{ note.errors }}</label>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="field-group">
       <h2>Your posts</h2>
       <label class="check">{{ form.show_related_posts }} {{ form.show_related_posts.label }}</label>
       <p class="hint">When on, readers see a short list of your other public posts below each post. Turn it off for a cleaner ending.</p>

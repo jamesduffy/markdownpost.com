@@ -196,11 +196,34 @@ def tools_reference():
     return f"There are {len(TOOLS)} tools: {names}.\n\n" + "\n".join(parts)
 
 
+def api_reference():
+    from posts import api, api_schema
+    from posts.serialization import POST_FIELDS
+
+    endpoints = _table(["GET endpoint", "Returns"], [
+        (f"`/api/v1/{p.pattern}`", shape)
+        for p, shape in zip(api.urlpatterns, ("Object with `posts` (post summaries) and `next_cursor` (text or null).", "Post object including `body`.", "Public user object."))
+    ])
+    return (
+        endpoints + "\n\n### List query parameters\n\n"
+        + _table(["Parameter", "Meaning"], [(f"`{k}`", v) for k, v in api_schema.PARAMETERS.items()])
+        + "\n\n### Post fields\n\n"
+        + _table(["Field", "Meaning"], [(f"`{k}`", v) for k, v in POST_FIELDS.items()])
+        + "\n\n### User fields\n\n"
+        + _table(["Field", "Meaning"], [(f"`{k}`", v) for k, v in api_schema.USER_FIELDS.items()])
+        + f"\n\nPublic responses have `Cache-Control: public, max-age={api_schema.PUBLIC_MAX_AGE}` and the matching "
+        "`Cloudflare-CDN-Cache-Control`. All bearer responses and errors are `no-store`. "
+        "Send `If-None-Match` with the returned `ETag` for a bodyless 304. CORS permits GET only (OPTIONS supports preflight); "
+        "Authorization and If-None-Match are allowed, and ETag is exposed. No cookies or credentialed CORS are needed."
+    )
+
+
 GENERATORS = {
     "limits_table": limits_table,
     "theme_options": theme_options,
     "theme_contrast_rules": theme_contrast_rules,
     "tools_reference": tools_reference,
+    "api_reference": api_reference,
 }
 
 
