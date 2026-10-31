@@ -144,8 +144,12 @@ class ContentApiTests(TestCase):
             self.assertEqual(conditional.status_code, 304)
             self.assertEqual(conditional.content, b"")
             self.assertEqual(conditional["ETag"], response["ETag"])
-            for method in ("post", "put", "patch", "delete", "head"):
+            for method in ("post", "put", "patch", "delete"):
                 self.assertEqual(getattr(self.client, method)(url).status_code, 405)
+            head = self.client.head(url)  # a read method: same headers as GET, no body
+            self.assertEqual(head.status_code, 200)
+            self.assertEqual(head.content, b"")
+            self.assertEqual(head["ETag"], response["ETag"])
             preflight = self.client.options(url, HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET")
             self.assertEqual(preflight.status_code, 204)
             self.assertEqual(preflight["Access-Control-Allow-Methods"], "GET")

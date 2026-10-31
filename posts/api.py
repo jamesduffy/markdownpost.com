@@ -39,9 +39,9 @@ def endpoint(view):
         try:
             if request.method == "OPTIONS":
                 response = HttpResponse(status=204)
-            elif request.method != "GET":
+            elif request.method not in ("GET", "HEAD"):
                 response = JsonResponse({"error": "Only GET is supported."}, status=405)
-                response["Allow"] = "GET, OPTIONS"
+                response["Allow"] = "GET, HEAD, OPTIONS"
             else:
                 request.api_token = authenticate(request) if authorized else None
                 if authorized and request.api_token is None:
